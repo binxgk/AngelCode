@@ -118,13 +118,13 @@ func (h *Handler) registerSkillRoutes(mux *http.ServeMux) {
 func (h *Handler) handleListSkills(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
 	items, err := buildSkillSupportItems(cfg)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to build skill list: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to build skill list: %v", err))
 		return
 	}
 
@@ -137,13 +137,13 @@ func (h *Handler) handleListSkills(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetSkill(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
 	skillItems, err := buildSkillSupportItems(cfg)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to build skill list: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to build skill list: %v", err))
 		return
 	}
 	name := r.PathValue("name")
@@ -154,7 +154,7 @@ func (h *Handler) handleGetSkill(w http.ResponseWriter, r *http.Request) {
 
 		content, err := loadSkillContent(skillItem.Path)
 		if err != nil {
-			http.Error(w, "Skill content not found", http.StatusNotFound)
+			writeAPIError(w, http.StatusNotFound, "Skill content not found")
 			return
 		}
 
@@ -166,17 +166,17 @@ func (h *Handler) handleGetSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Error(w, "Skill not found", http.StatusNotFound)
+	writeAPIError(w, http.StatusNotFound, "Skill not found")
 }
 
 func (h *Handler) handleSearchSkills(w http.ResponseWriter, r *http.Request) {
 	cfg, loadErr := config.LoadConfig(h.configPath)
 	if loadErr != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", loadErr), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", loadErr))
 		return
 	}
 	if registryErr := ensureSkillRegistryToolEnabled(cfg, "find_skills"); registryErr != nil {
-		http.Error(w, registryErr.Error(), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, registryErr.Error())
 		return
 	}
 
@@ -186,7 +186,7 @@ func (h *Handler) handleSearchSkills(w http.ResponseWriter, r *http.Request) {
 	if rawLimit := strings.TrimSpace(r.URL.Query().Get("limit")); rawLimit != "" {
 		parsedLimit, parseErr := strconv.Atoi(rawLimit)
 		if parseErr != nil || parsedLimit < 1 || parsedLimit > 50 {
-			http.Error(w, "limit must be between 1 and 50", http.StatusBadRequest)
+			writeAPIError(w, http.StatusBadRequest, "limit must be between 1 and 50")
 			return
 		}
 		limit = parsedLimit
@@ -195,7 +195,7 @@ func (h *Handler) handleSearchSkills(w http.ResponseWriter, r *http.Request) {
 	if rawOffset := strings.TrimSpace(r.URL.Query().Get("offset")); rawOffset != "" {
 		parsedOffset, parseErr := strconv.Atoi(rawOffset)
 		if parseErr != nil || parsedOffset < 0 {
-			http.Error(w, "offset must be 0 or greater", http.StatusBadRequest)
+			writeAPIError(w, http.StatusBadRequest, "offset must be 0 or greater")
 			return
 		}
 		offset = parsedOffset
@@ -203,7 +203,7 @@ func (h *Handler) handleSearchSkills(w http.ResponseWriter, r *http.Request) {
 
 	installedSkills, err := buildOccupiedWorkspaceSkillsByDirectory(cfg)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to inspect installed skills: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to inspect installed skills: %v", err))
 		return
 	}
 
@@ -225,7 +225,7 @@ func (h *Handler) handleSearchSkills(w http.ResponseWriter, r *http.Request) {
 	}
 	results, err := registryMgr.SearchAll(r.Context(), query, searchLimit)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to search skills: %v", err), http.StatusBadGateway)
+		writeAPIError(w, http.StatusBadGateway, fmt.Sprintf("Failed to search skills: %v", err))
 		return
 	}
 
@@ -285,17 +285,17 @@ func (h *Handler) handleSearchSkills(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleInstallSkill(w http.ResponseWriter, r *http.Request) {
 	cfg, loadErr := config.LoadConfig(h.configPath)
 	if loadErr != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", loadErr), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", loadErr))
 		return
 	}
 	if registryErr := ensureSkillRegistryToolEnabled(cfg, "install_skill"); registryErr != nil {
-		http.Error(w, registryErr.Error(), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, registryErr.Error())
 		return
 	}
 
 	var req installSkillRequest
 	if decodeErr := json.NewDecoder(r.Body).Decode(&req); decodeErr != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", decodeErr), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", decodeErr))
 		return
 	}
 
@@ -318,12 +318,12 @@ func (h *Handler) handleInstallSkill(w http.ResponseWriter, r *http.Request) {
 	registryMgr := newSkillsRegistryManager(cfg)
 	registry := registryMgr.GetRegistry(req.Registry)
 	if registry == nil {
-		http.Error(w, fmt.Sprintf("registry %q not found", req.Registry), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("registry %q not found", req.Registry))
 		return
 	}
 	dirName, err := registry.ResolveInstallDirName(req.Slug)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("invalid slug %q: error: %s", req.Slug, err.Error()), http.StatusBadRequest)
+		writeAPIErrorf(w, http.StatusBadRequest, "invalid slug %q: error: %s", req.Slug, err.Error())
 		return
 	}
 
@@ -337,29 +337,29 @@ func (h *Handler) handleInstallSkill(w http.ResponseWriter, r *http.Request) {
 	if _, statErr := os.Stat(targetDir); statErr == nil {
 		targetExists = true
 	} else if !os.IsNotExist(statErr) {
-		http.Error(w, fmt.Sprintf("Failed to inspect install target: %v", statErr), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to inspect install target: %v", statErr))
 		return
 	}
 
 	if !req.Force && targetExists {
-		http.Error(w, fmt.Sprintf("skill %q already installed at %s", dirName, targetDir), http.StatusConflict)
+		writeAPIError(w, http.StatusConflict, fmt.Sprintf("skill %q already installed at %s", dirName, targetDir))
 		return
 	}
 	if mkdirErr := os.MkdirAll(skillsRoot, 0o755); mkdirErr != nil {
-		http.Error(w, fmt.Sprintf("Failed to create skills directory: %v", mkdirErr), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to create skills directory: %v", mkdirErr))
 		return
 	}
 
 	stagedWorkspaceRoot, stagedTargetDir, err := createStagedSkillInstall(skillsRoot, dirName)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to prepare staged install: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to prepare staged install: %v", err))
 		return
 	}
 	defer os.RemoveAll(stagedWorkspaceRoot)
 
 	result, err := registry.DownloadAndInstall(r.Context(), req.Slug, req.Version, stagedTargetDir)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to install skill: %v", err), http.StatusBadGateway)
+		writeAPIError(w, http.StatusBadGateway, fmt.Sprintf("Failed to install skill: %v", err))
 		return
 	}
 	if result.IsMalwareBlocked {
@@ -391,7 +391,7 @@ func (h *Handler) handleInstallSkill(w http.ResponseWriter, r *http.Request) {
 		InstalledVersion: result.Version,
 		InstalledAt:      installedAt,
 	}); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to persist skill metadata: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to persist skill metadata: %v", err))
 		return
 	}
 
@@ -401,7 +401,7 @@ func (h *Handler) handleInstallSkill(w http.ResponseWriter, r *http.Request) {
 		targetDir,
 		req.Force && targetExists,
 	); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to activate installed skill: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to activate installed skill: %v", err))
 		return
 	}
 
@@ -442,30 +442,30 @@ func (h *Handler) handleInstallSkill(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleImportSkill(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
 	err = r.ParseMultipartForm(2 << 20)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Invalid multipart form: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid multipart form: %v", err))
 		return
 	}
 
 	uploadedFile, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "file is required", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "file is required")
 		return
 	}
 	defer uploadedFile.Close()
 
 	content, err := io.ReadAll(io.LimitReader(uploadedFile, maxImportedSkillSize+1))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to read file: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Failed to read file: %v", err))
 		return
 	}
 	if len(content) > maxImportedSkillSize {
-		http.Error(w, "file exceeds 1MB limit", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "file exceeds 1MB limit")
 		return
 	}
 	workspaceSkillWriteMu.Lock()
@@ -473,7 +473,7 @@ func (h *Handler) handleImportSkill(w http.ResponseWriter, r *http.Request) {
 
 	importedSkill, statusCode, err := importUploadedSkill(cfg, fileHeader.Filename, content)
 	if err != nil {
-		http.Error(w, err.Error(), statusCode)
+		writeAPIError(w, statusCode, err.Error())
 		return
 	}
 
@@ -484,7 +484,7 @@ func (h *Handler) handleImportSkill(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
@@ -503,7 +503,7 @@ func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		if err := os.RemoveAll(filepath.Dir(skill.Path)); err != nil {
-			http.Error(w, fmt.Sprintf("Failed to delete skill: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to delete skill: %v", err))
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -511,11 +511,11 @@ func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if matchedNonWorkspace {
-		http.Error(w, "only workspace skills can be deleted", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "only workspace skills can be deleted")
 		return
 	}
 
-	http.Error(w, "Skill not found", http.StatusNotFound)
+	writeAPIError(w, http.StatusNotFound, "Skill not found")
 }
 
 func newSkillsLoader(workspace string) *skills.SkillsLoader {

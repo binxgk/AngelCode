@@ -436,12 +436,16 @@ export function AddModelSheet({
         <SheetContent
           side="right"
           className="flex flex-col gap-0 p-0 data-[side=right]:!w-full data-[side=right]:sm:!w-[560px] data-[side=right]:sm:!max-w-[560px]"
+          showCloseButton
         >
-          <SheetHeader className="border-b-muted border-b px-6 py-5">
-            <SheetTitle className="text-base">
+          <SheetHeader
+            className="px-6 py-4"
+            style={{ borderBottom: "1px solid var(--line)" }}
+          >
+            <SheetTitle className="text-[15px] font-semibold tracking-tight">
               {t("models.add.title")}
             </SheetTitle>
-            <SheetDescription className="text-xs">
+            <SheetDescription className="text-[12px] text-ink-3">
               {t("models.add.description")}
             </SheetDescription>
           </SheetHeader>
@@ -450,7 +454,7 @@ export function AddModelSheet({
             className="min-h-0 flex-1 overflow-y-auto"
             ref={scrollContainerRef}
           >
-            <div className="space-y-5 px-6 py-5">
+            <div className="space-y-5 px-6 py-5 pb-8">
               <Field
                 label={t("models.add.modelName")}
                 hint={t("models.add.modelNameHint")}
@@ -795,7 +799,10 @@ export function AddModelSheet({
             </div>
           </div>
 
-          <SheetFooter className="border-t-muted border-t px-6 py-4">
+          <SheetFooter
+            className="px-6 py-4"
+            style={{ borderTop: "1px solid var(--line)" }}
+          >
             {isDirty && (
               <ConfigChangeNotice
                 kind="save"

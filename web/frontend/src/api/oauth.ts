@@ -1,4 +1,4 @@
-import { launcherFetch } from "@/api/http"
+import { apiRequest } from "@/api/http"
 
 export type OAuthProvider = "openai" | "anthropic" | "google-antigravity"
 export type OAuthMethod = "browser" | "device_code" | "token"
@@ -50,25 +50,14 @@ interface OAuthProvidersResponse {
   providers: OAuthProviderStatus[]
 }
 
-const BASE_URL = ""
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await launcherFetch(`${BASE_URL}${path}`, options)
-  if (!res.ok) {
-    const message = await res.text()
-    throw new Error(message || `API error: ${res.status} ${res.statusText}`)
-  }
-  return res.json() as Promise<T>
-}
-
 export async function getOAuthProviders(): Promise<OAuthProvidersResponse> {
-  return request<OAuthProvidersResponse>("/api/oauth/providers")
+  return apiRequest<OAuthProvidersResponse>("/api/oauth/providers")
 }
 
 export async function loginOAuth(
   payload: OAuthLoginRequest,
 ): Promise<OAuthLoginResponse> {
-  return request<OAuthLoginResponse>("/api/oauth/login", {
+  return apiRequest<OAuthLoginResponse>("/api/oauth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -76,13 +65,13 @@ export async function loginOAuth(
 }
 
 export async function getOAuthFlow(flowID: string): Promise<OAuthFlowState> {
-  return request<OAuthFlowState>(
+  return apiRequest<OAuthFlowState>(
     `/api/oauth/flows/${encodeURIComponent(flowID)}`,
   )
 }
 
 export async function pollOAuthFlow(flowID: string): Promise<OAuthFlowState> {
-  return request<OAuthFlowState>(
+  return apiRequest<OAuthFlowState>(
     `/api/oauth/flows/${encodeURIComponent(flowID)}/poll`,
     {
       method: "POST",
@@ -93,7 +82,7 @@ export async function pollOAuthFlow(flowID: string): Promise<OAuthFlowState> {
 export async function logoutOAuth(
   provider: OAuthProvider,
 ): Promise<{ status: string; provider: OAuthProvider }> {
-  return request<{ status: string; provider: OAuthProvider }>(
+  return apiRequest<{ status: string; provider: OAuthProvider }>(
     "/api/oauth/logout",
     {
       method: "POST",

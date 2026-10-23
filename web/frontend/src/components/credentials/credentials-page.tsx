@@ -44,33 +44,31 @@ export function CredentialsPage() {
     <div className="flex h-full flex-col">
       <PageHeader title={t("navigation.credentials")} />
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
-        <div className="pt-2">
-          <p className="text-muted-foreground text-sm">
-            {t("credentials.description")}
-          </p>
-        </div>
+      <div className="ac-embed-body px-1 sm:px-2">
+        <p className="ac-grp-desc pt-1">{t("credentials.description")}</p>
 
         {error && (
-          <div className="text-destructive bg-destructive/10 mt-4 rounded-lg px-4 py-3 text-sm">
+          <div className="mb-3 rounded-lg border border-line bg-red-soft px-4 py-2.5 text-[12.5px] text-bad">
             {error}
           </div>
         )}
 
         {activeFlow && (
-          <div className="bg-muted mt-4 rounded-lg border px-4 py-3 text-sm">
-            <p className="font-medium">{t("credentials.flow.current")}</p>
-            <p className="text-muted-foreground mt-1">{flowHint}</p>
+          <div className="mb-3 flex items-center gap-2 rounded-lg border border-line bg-bone-2 px-4 py-2.5 text-[12.5px]">
+            <span className="font-medium text-ink">
+              {t("credentials.flow.current")}
+            </span>
+            <span className="text-ink-3">{flowHint}</span>
           </div>
         )}
 
         {loading ? (
-          <div className="text-muted-foreground flex items-center gap-2 py-10 text-sm">
+          <div className="flex items-center gap-2 py-10 text-[12.5px] text-ink-3">
             <IconLoader2 className="size-4 animate-spin" />
             {t("credentials.loading")}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 py-5 lg:auto-rows-fr lg:grid-cols-3">
+          <div className="ac-grp" style={{ paddingTop: 0 }}>
             <OpenAICredentialCard
               status={openaiStatus}
               activeAction={activeAction}

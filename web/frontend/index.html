@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
@@ -8,7 +8,29 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PicoClaw</title>
+    <title>Angel Code</title>
+    <script>
+      // 在首帧前应用主题，避免闪白
+      (function () {
+        try {
+          var stored = localStorage.getItem("angel-code:theme");
+          if (stored !== "auto" && stored !== "light" && stored !== "dark") {
+            var legacy = localStorage.getItem("theme");
+            stored =
+              legacy === "light" || legacy === "dark"
+                ? legacy
+                : stored || "auto";
+          }
+          var dark =
+            stored === "dark" ||
+            (stored === "auto" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var theme = dark ? "dark" : "light";
+          document.documentElement.dataset.theme = theme;
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
 
   <body>

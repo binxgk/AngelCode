@@ -2,6 +2,8 @@
  * Dashboard launcher auth API.
  * Uses plain fetch (not launcherFetch) to avoid redirect loops on auth pages.
  */
+import { readErrorMessage } from "@/api/http"
+
 export type LoginResult =
   | { ok: true }
   | { ok: false; status: number; error: string }
@@ -20,7 +22,7 @@ export async function postLauncherDashboardLogin(
   return {
     ok: false,
     status: res.status,
-    error: await readLauncherAuthError(res),
+    error: await readErrorMessage(res),
   }
 }
 
@@ -67,16 +69,5 @@ export async function postLauncherDashboardSetup(
     }),
   })
   if (res.ok) return { ok: true }
-  return { ok: false, error: await readLauncherAuthError(res) }
-}
-
-async function readLauncherAuthError(res: Response): Promise<string> {
-  let msg = `Request failed with status ${res.status}`
-  try {
-    const j = (await res.json()) as { error?: string }
-    if (j.error) msg = j.error
-  } catch {
-    /* ignore */
-  }
-  return msg
+  return { ok: false, error: await readErrorMessage(res) }
 }

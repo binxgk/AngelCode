@@ -123,7 +123,7 @@ func SaveCatalog(provider, apiBase, apiKey string, models []CatalogModel) error 
 func (h *Handler) handleListCatalogs(w http.ResponseWriter, r *http.Request) {
 	store, err := loadCatalogs()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load catalogs: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load catalogs: %v", err))
 		return
 	}
 
@@ -145,24 +145,24 @@ func (h *Handler) handleListCatalogs(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleDeleteCatalog(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
-		http.Error(w, "id is required", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "id is required")
 		return
 	}
 
 	store, err := loadCatalogs()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load catalogs: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load catalogs: %v", err))
 		return
 	}
 
 	if _, ok := store.Entries[id]; !ok {
-		http.Error(w, "catalog not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "catalog not found")
 		return
 	}
 
 	delete(store.Entries, id)
 	if err := saveCatalogs(store); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save catalogs: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save catalogs: %v", err))
 		return
 	}
 

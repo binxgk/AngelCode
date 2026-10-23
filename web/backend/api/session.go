@@ -820,7 +820,7 @@ func resolveSessionsDir(workspace string) string {
 func (h *Handler) handleListSessions(w http.ResponseWriter, r *http.Request) {
 	dir, toolFeedbackMaxArgsLength, err := h.sessionRuntimeSettings()
 	if err != nil {
-		http.Error(w, "failed to resolve sessions directory", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "failed to resolve sessions directory")
 		return
 	}
 
@@ -900,13 +900,13 @@ func (h *Handler) handleListSessions(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetSession(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 	if sessionID == "" {
-		http.Error(w, "missing session id", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "missing session id")
 		return
 	}
 
 	dir, toolFeedbackMaxArgsLength, err := h.sessionRuntimeSettings()
 	if err != nil {
-		http.Error(w, "failed to resolve sessions directory", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "failed to resolve sessions directory")
 		return
 	}
 
@@ -930,9 +930,9 @@ func (h *Handler) handleGetSession(w http.ResponseWriter, r *http.Request) {
 		}
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				http.Error(w, "session not found", http.StatusNotFound)
+				writeAPIError(w, http.StatusNotFound, "session not found")
 			} else {
-				http.Error(w, "failed to parse session", http.StatusInternalServerError)
+				writeAPIError(w, http.StatusInternalServerError, "failed to parse session")
 			}
 			return
 		}
@@ -961,13 +961,13 @@ func (h *Handler) handleGetSession(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 	if sessionID == "" {
-		http.Error(w, "missing session id", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "missing session id")
 		return
 	}
 
 	dir, err := h.sessionsDir()
 	if err != nil {
-		http.Error(w, "failed to resolve sessions directory", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "failed to resolve sessions directory")
 		return
 	}
 
@@ -979,7 +979,7 @@ func (h *Handler) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 				if os.IsNotExist(err) {
 					continue
 				}
-				http.Error(w, "failed to delete session", http.StatusInternalServerError)
+				writeAPIError(w, http.StatusInternalServerError, "failed to delete session")
 				return
 			}
 			removed = true
@@ -989,7 +989,7 @@ func (h *Handler) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 	if legacyRef, err := h.findLegacyPicoSession(dir, sessionID); err == nil {
 		if err := os.Remove(legacyRef.Path); err != nil {
 			if !os.IsNotExist(err) {
-				http.Error(w, "failed to delete session", http.StatusInternalServerError)
+				writeAPIError(w, http.StatusInternalServerError, "failed to delete session")
 				return
 			}
 		} else {
@@ -998,7 +998,7 @@ func (h *Handler) handleDeleteSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !removed {
-		http.Error(w, "session not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "session not found")
 		return
 	}
 

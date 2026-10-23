@@ -1,44 +1,60 @@
 import type { ReactNode } from "react"
 
 import type { OAuthProviderStatus } from "@/api/oauth"
+import { cn } from "@/lib/utils"
 
-import { ProviderStatusLine } from "./provider-status-line"
-
-interface CredentialCardProps {
-  title: ReactNode
+interface CredentialRowProps {
+  icon: ReactNode
+  title: string
   description: string
   status: OAuthProviderStatus["status"]
-  authMethod?: string
+  statusLabel: string
   details?: ReactNode
   actions: ReactNode
   footer?: ReactNode
 }
 
-export function CredentialCard({
+const STATUS_TONE: Record<OAuthProviderStatus["status"], string> = {
+  connected: "ok",
+  needs_refresh: "wait",
+  expired: "stop",
+  not_logged_in: "",
+}
+
+export function CredentialRow({
+  icon,
   title,
   description,
   status,
-  authMethod,
+  statusLabel,
   details,
   actions,
   footer,
-}: CredentialCardProps) {
+}: CredentialRowProps) {
   return (
-    <section className="bg-card flex h-full flex-col rounded-xl border p-4">
-      <div className="min-h-16">
-        <h3 className="text-base font-semibold">{title}</h3>
-        <p className="text-muted-foreground mt-1 text-xs">{description}</p>
+    <div className="ac-cred-row">
+      <div
+        className="mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg"
+        style={{ background: "var(--bone-2)", color: "var(--ink-2)" }}
+        aria-hidden
+      >
+        {icon}
       </div>
 
-      <ProviderStatusLine status={status} authMethod={authMethod} />
-      <div className="text-muted-foreground mt-3 min-h-11 text-xs leading-5">
+      <div className="ac-cred-main">
+        <div className="ac-cred-title">
+          <b>{title}</b>
+          <span className={cn("ac-tag", STATUS_TONE[status])}>
+            <i />
+            {statusLabel}
+          </span>
+        </div>
+        <span className="ac-cred-desc">{description}</span>
         {details}
+        <div className="ac-cred-actions">{actions}</div>
       </div>
 
-      <div className="mt-auto flex flex-col gap-4 pt-4">
-        <div className="min-h-[112px]">{actions}</div>
-        <div className="min-h-8">{footer}</div>
-      </div>
-    </section>
+      {footer && <div className="shrink-0 self-center">{footer}</div>}
+    </div>
   )
 }

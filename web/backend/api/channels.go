@@ -64,13 +64,13 @@ func (h *Handler) handleGetChannelConfig(w http.ResponseWriter, r *http.Request)
 	channelName := r.PathValue("name")
 	item, ok := findChannelCatalogItem(channelName)
 	if !ok {
-		http.Error(w, "Channel not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "Channel not found")
 		return
 	}
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, "Failed to load config", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to load config")
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *Handler) handleGetChannelConfig(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to encode response")
 	}
 }
 

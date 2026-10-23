@@ -3,14 +3,11 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
 import { useEffect, useState } from "react"
 
 import { getLauncherAuthStatus } from "@/api/launcher-auth"
-import { AppLayout } from "@/components/app-layout"
+import { AngelLayout } from "@/components/shell/angel-layout"
 import { initializeChatStore } from "@/features/chat/controller"
 import { isLauncherAuthPathname } from "@/lib/launcher-login-path"
 
 const RootLayout = () => {
-  // Prefer the real address bar path: stale embedded bundles may not register
-  // /launcher-login or /launcher-setup in the route tree, which would otherwise
-  // keep AppLayout + gateway polling → 401 → launcherFetch redirect loop.
   const routerState = useRouterState({
     select: (s) => ({
       pathname: s.location.pathname,
@@ -32,7 +29,6 @@ const RootLayout = () => {
 
   const [authError, setAuthError] = useState<string | null>(null)
 
-  // Session guard: proactively check auth status on every page load.
   useEffect(() => {
     if (isAuthPage) return
     void getLauncherAuthStatus()
@@ -44,10 +40,6 @@ const RootLayout = () => {
         }
       })
       .catch((err: unknown) => {
-        // On 401/403, redirect to login — the session is invalid.
-        // On 5xx (e.g. 503 when the auth store is unavailable) or network errors,
-        // do NOT redirect: a subsequent successful login would loop straight back here.
-        // launcherFetch handles 401 on real API calls regardless.
         if (err instanceof Error && /^status 40[13]$/.test(err.message)) {
           globalThis.location.assign("/launcher-login")
         } else {
@@ -61,9 +53,7 @@ const RootLayout = () => {
   }, [isAuthPage])
 
   useEffect(() => {
-    if (isAuthPage) {
-      return
-    }
+    if (isAuthPage) return
     initializeChatStore()
   }, [isAuthPage])
 
@@ -79,21 +69,19 @@ const RootLayout = () => {
   return (
     <>
       {authError && (
-        <div className="bg-destructive text-destructive-foreground fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-2 text-sm shadow-md">
-          <span>Auth service error: {authError}</span>
+        <div className="bg-red-soft text-bad fixed inset-x-0 top-0 z-[100] flex items-center justify-between px-4 py-2 text-sm shadow-md">
+          <span>认证服务异常：{authError}</span>
           <button
             className="ml-4 opacity-70 hover:opacity-100"
             onClick={() => setAuthError(null)}
-            aria-label="Dismiss"
+            aria-label="关闭"
           >
             ✕
           </button>
         </div>
       )}
-      <AppLayout>
-        <Outlet />
-        {import.meta.env.DEV ? <TanStackRouterDevtools /> : null}
-      </AppLayout>
+      <AngelLayout />
+      {import.meta.env.DEV ? <TanStackRouterDevtools /> : null}
     </>
   )
 }

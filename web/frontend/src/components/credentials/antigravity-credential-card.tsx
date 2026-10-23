@@ -7,9 +7,8 @@ import {
 import { useTranslation } from "react-i18next"
 
 import type { OAuthProviderStatus } from "@/api/oauth"
-import { Button } from "@/components/ui/button"
 
-import { CredentialCard } from "./credential-card"
+import { CredentialRow } from "./credential-card"
 
 interface AntigravityCredentialCardProps {
   status?: OAuthProviderStatus
@@ -17,6 +16,13 @@ interface AntigravityCredentialCardProps {
   onStopLoading: () => void
   onStartBrowserOAuth: () => void
   onAskLogout: () => void
+}
+
+const statusLabelKey: Record<string, string> = {
+  connected: "credentials.status.connected",
+  needs_refresh: "credentials.status.needsRefresh",
+  expired: "credentials.status.expired",
+  not_logged_in: "credentials.status.notLoggedIn",
 }
 
 export function AntigravityCredentialCard({
@@ -29,76 +35,73 @@ export function AntigravityCredentialCard({
   const { t } = useTranslation()
   const actionBusy = activeAction !== ""
   const browserLoading = activeAction === "google-antigravity:browser"
+  const statusValue = status?.status ?? "not_logged_in"
 
   return (
-    <CredentialCard
-      title={
-        <span className="inline-flex items-center gap-2">
-          <span className="border-muted inline-flex size-6 items-center justify-center rounded-full border">
-            <IconBrandGoogle className="size-3.5" />
-          </span>
-          <span>Google Antigravity</span>
-        </span>
-      }
+    <CredentialRow
+      icon={<IconBrandGoogle className="size-4" />}
+      title="Google Antigravity"
       description={t("credentials.providers.antigravity.description")}
-      status={status?.status ?? "not_logged_in"}
-      authMethod={status?.auth_method}
+      status={statusValue}
+      statusLabel={t(statusLabelKey[statusValue] ?? statusLabelKey.not_logged_in)}
       details={
-        <div className="space-y-1">
-          {status?.email && (
-            <p>
-              {t("credentials.labels.email")}: {status.email}
-            </p>
-          )}
-          {status?.project_id && (
-            <p>
-              {t("credentials.labels.project")}: {status.project_id}
-            </p>
-          )}
-        </div>
-      }
-      actions={
-        <div className="border-muted flex h-[120px] flex-col justify-center rounded-lg border p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={actionBusy}
-              onClick={onStartBrowserOAuth}
-            >
-              {browserLoading && (
-                <IconLoader2 className="size-4 animate-spin" />
-              )}
-              <IconLockOpen className="size-4" />
-              {t("credentials.actions.browser")}
-            </Button>
-            {browserLoading && (
-              <Button
-                size="icon-xs"
-                variant="secondary"
-                onClick={onStopLoading}
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <IconPlayerStopFilled className="size-3" />
-              </Button>
+        status?.email || status?.project_id ? (
+          <div className="mt-1 space-y-0.5 font-mono text-[11px] text-ink-3">
+            {status?.email && (
+              <div>
+                {t("credentials.labels.email")}: {status.email}
+              </div>
+            )}
+            {status?.project_id && (
+              <div>
+                {t("credentials.labels.project")}: {status.project_id}
+              </div>
             )}
           </div>
-        </div>
+        ) : null
+      }
+      actions={
+        <>
+          <button
+            type="button"
+            className="ac-mini-btn"
+            disabled={actionBusy}
+            onClick={onStartBrowserOAuth}
+          >
+            {browserLoading ? (
+              <IconLoader2 className="animate-spin" />
+            ) : (
+              <IconLockOpen />
+            )}
+            {t("credentials.actions.browser")}
+          </button>
+
+          {browserLoading && (
+            <button
+              type="button"
+              className="ac-mini-btn danger"
+              onClick={onStopLoading}
+              aria-label={t("credentials.actions.stopLoading")}
+              title={t("credentials.actions.stopLoading")}
+            >
+              <IconPlayerStopFilled />
+            </button>
+          )}
+        </>
       }
       footer={
         status?.logged_in ? (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            className="ac-mini-btn danger"
             disabled={actionBusy}
             onClick={onAskLogout}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             {activeAction === "google-antigravity:logout" && (
-              <IconLoader2 className="size-4 animate-spin" />
+              <IconLoader2 className="animate-spin" />
             )}
             {t("credentials.actions.logout")}
-          </Button>
+          </button>
         ) : null
       }
     />

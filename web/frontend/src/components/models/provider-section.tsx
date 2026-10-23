@@ -2,6 +2,7 @@ import { IconChevronDown } from "@tabler/icons-react"
 import { useState } from "react"
 
 import type { ModelInfo } from "@/api/models"
+import { cn } from "@/lib/utils"
 
 import { ModelCard } from "./model-card"
 import { ProviderIcon } from "./provider-icon"
@@ -37,33 +38,21 @@ export function ProviderSection({
   const [open, setOpen] = useState(true)
 
   return (
-    <section className="my-8">
+    <section>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="mb-3 grid w-full grid-cols-[1fr_auto_1fr_auto] items-center gap-2 px-1 py-1.5 text-left"
+        onClick={() => setOpen((value) => !value)}
+        className="ac-grp-toggle"
         aria-expanded={open}
       >
-        <div className="border-border/40 border-t" />
-        <span className="text-foreground/80 text-center text-xs font-semibold tracking-wide uppercase">
-          <span className="bg-background inline-flex items-center gap-1.5 px-2">
-            <ProviderIcon provider={provider} />
-            {provider.label}
-          </span>
-        </span>
-        <div className="border-border/40 border-t" />
-        <span className="flex justify-end">
-          <IconChevronDown
-            className={[
-              "text-muted-foreground size-4 transition-transform",
-              open ? "rotate-180" : "",
-            ].join(" ")}
-          />
-        </span>
+        <ProviderIcon provider={provider} />
+        <span>{provider.label}</span>
+        <span className="count">{models.length}</span>
+        <IconChevronDown className={cn("chev", open && "rotate-180")} />
       </button>
 
       {open && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="pb-1">
           {models.map((model) => (
             <ModelCard
               key={model.index}

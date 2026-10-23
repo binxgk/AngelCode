@@ -54,7 +54,7 @@ func (h *Handler) loadLauncherConfig() (launcherconfig.Config, error) {
 func (h *Handler) handleGetLauncherConfig(w http.ResponseWriter, r *http.Request) {
 	cfg, err := h.loadLauncherConfig()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load launcher config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load launcher config: %v", err))
 		return
 	}
 
@@ -71,13 +71,13 @@ func (h *Handler) handleGetLauncherConfig(w http.ResponseWriter, r *http.Request
 func (h *Handler) handleUpdateLauncherConfig(w http.ResponseWriter, r *http.Request) {
 	var payload launcherConfigUpdatePayload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
 	cfg, err := h.loadLauncherConfig()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load launcher config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load launcher config: %v", err))
 		return
 	}
 	cfg.Port = payload.Port
@@ -89,12 +89,12 @@ func (h *Handler) handleUpdateLauncherConfig(w http.ResponseWriter, r *http.Requ
 	cfg.TrustedProxyCIDRs = append([]string(nil), payload.TrustedProxyCIDRs...)
 	cfg.LegacyLauncherToken = ""
 	if err := launcherconfig.Validate(cfg); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := launcherconfig.Save(h.launcherConfigPath(), cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save launcher config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save launcher config: %v", err))
 		return
 	}
 

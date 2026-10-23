@@ -24,6 +24,19 @@
 
 ---
 
+> ## 关于本仓库：AngelCode
+>
+> 本仓库是 **[PicoClaw](https://github.com/sipeed/picoclaw)** 的品牌化衍生版本，在官方代码之上叠加了品牌替换、控制台界面改造（浮层设置面板、模型/思考工具选择、控件对齐）、默认中文与 NAS 容器化打包。核心能力与功能实现均来自上游。
+>
+> - 差异化清单与界面截图：**[docs/ANGELCODE.md](docs/ANGELCODE.md)**
+> - 分支约定：`main` = 官方原样；`angelcode` = 本仓库改动（构建与部署请用此分支）
+> - 构建/部署：见 [docs/ANGELCODE.md](docs/ANGELCODE.md) 第 3 节 与 [BUILD-FROM-SOURCE.md](BUILD-FROM-SOURCE.md)
+> - 许可：MIT，原始版权归 Sipeed 及 PicoClaw 贡献者所有
+>
+> 下方为上游 PicoClaw 原始 README。
+
+---
+
 > **PicoClaw** is an independent open-source project initiated by [Sipeed](https://sipeed.com), written entirely in **Go** from scratch — not a fork of OpenClaw, NanoBot, or any other project.
 
 **PicoClaw** is an ultra-lightweight personal AI assistant inspired by [NanoBot](https://github.com/HKUDS/nanobot). It was rebuilt from the ground up in **Go** through a "self-bootstrapping" process — the AI Agent itself drove the architecture migration and code optimization.

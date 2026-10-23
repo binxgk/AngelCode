@@ -591,7 +591,7 @@ func normalizeDefaultChainReferences(cfg *config.Config) {
 func (h *Handler) handleListModels(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
@@ -662,7 +662,7 @@ func (h *Handler) handleListModels(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleGetDefaultChain(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	normalizeStoredModelProviders(cfg)
@@ -683,7 +683,7 @@ func (h *Handler) handleGetDefaultChain(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) handleAddModel(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -695,7 +695,7 @@ func (h *Handler) handleAddModel(w http.ResponseWriter, r *http.Request) {
 
 	var mc custom
 	if err = json.Unmarshal(body, &mc); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
@@ -708,12 +708,12 @@ func (h *Handler) handleAddModel(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	normalizeIncomingModelConfig(&mc.ModelConfig, defaultChainProvider(cfg))
 	if err = validateIncomingModelConfig(&mc.ModelConfig, nil); err != nil {
-		http.Error(w, fmt.Sprintf("Validation error: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %v", err))
 		return
 	}
 
@@ -722,7 +722,7 @@ func (h *Handler) handleAddModel(w http.ResponseWriter, r *http.Request) {
 	normalizeDefaultChainReferences(cfg)
 
 	if err := config.SaveConfig(h.configPath, cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -742,20 +742,20 @@ func (h *Handler) handleAddModel(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 	idx, err := strconv.Atoi(r.PathValue("index"))
 	if err != nil {
-		http.Error(w, "Invalid index", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Invalid index")
 		return
 	}
 
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
 
 	var rawFields map[string]json.RawMessage
 	if err = json.Unmarshal(body, &rawFields); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
@@ -766,7 +766,7 @@ func (h *Handler) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 
 	var mc custom
 	if err = json.Unmarshal(body, &mc); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
@@ -775,13 +775,13 @@ func (h *Handler) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	normalizeStoredModelProviders(cfg)
 
 	if idx < 0 || idx >= len(cfg.ModelList) {
-		http.Error(w, fmt.Sprintf("Index %d out of range (0-%d)", idx, len(cfg.ModelList)-1), http.StatusNotFound)
+		writeAPIErrorf(w, http.StatusNotFound, "Index %d out of range (0-%d)", idx, len(cfg.ModelList)-1)
 		return
 	}
 	oldModelName := strings.TrimSpace(cfg.ModelList[idx].ModelName)
@@ -847,7 +847,7 @@ func (h *Handler) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 
 	normalizeIncomingModelConfig(&mc.ModelConfig, defaultChainProvider(cfg))
 	if err = validateIncomingModelConfig(&mc.ModelConfig, cfg.ModelList[idx]); err != nil {
-		http.Error(w, fmt.Sprintf("Validation error: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %v", err))
 		return
 	}
 	newModelName := strings.TrimSpace(mc.ModelConfig.ModelName)
@@ -887,7 +887,7 @@ func (h *Handler) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("update model config: %#v", mc.ModelConfig)
 
 	if err := config.SaveConfig(h.configPath, cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -910,7 +910,7 @@ func (h *Handler) handleUpdateModel(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleDeleteModel(w http.ResponseWriter, r *http.Request) {
 	idx, err := strconv.Atoi(r.PathValue("index"))
 	if err != nil {
-		http.Error(w, "Invalid index", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Invalid index")
 		return
 	}
 
@@ -919,13 +919,13 @@ func (h *Handler) handleDeleteModel(w http.ResponseWriter, r *http.Request) {
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	normalizeStoredModelNames(cfg)
 
 	if idx < 0 || idx >= len(cfg.ModelList) {
-		http.Error(w, fmt.Sprintf("Index %d out of range (0-%d)", idx, len(cfg.ModelList)-1), http.StatusNotFound)
+		writeAPIErrorf(w, http.StatusNotFound, "Index %d out of range (0-%d)", idx, len(cfg.ModelList)-1)
 		return
 	}
 
@@ -960,7 +960,7 @@ func (h *Handler) handleDeleteModel(w http.ResponseWriter, r *http.Request) {
 	normalizeDefaultChainReferences(cfg)
 
 	if err := config.SaveConfig(h.configPath, cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -1006,7 +1006,7 @@ func replaceModelName(names []string, oldName string, newName string) []string {
 func (h *Handler) handleSetDefaultModel(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -1015,13 +1015,13 @@ func (h *Handler) handleSetDefaultModel(w http.ResponseWriter, r *http.Request) 
 		ModelName string `json:"model_name"`
 	}
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
 	modelName := strings.TrimSpace(req.ModelName)
 	if modelName == "" {
-		http.Error(w, "model_name is required", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "model_name is required")
 		return
 	}
 
@@ -1030,7 +1030,7 @@ func (h *Handler) handleSetDefaultModel(w http.ResponseWriter, r *http.Request) 
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	normalizeStoredModelNames(cfg)
@@ -1047,7 +1047,7 @@ func (h *Handler) handleSetDefaultModel(w http.ResponseWriter, r *http.Request) 
 		if strings.Contains(err.Error(), "not found in model_list") {
 			status = http.StatusNotFound
 		}
-		http.Error(w, err.Error(), status)
+		writeAPIError(w, status, err.Error())
 		return
 	}
 
@@ -1056,7 +1056,7 @@ func (h *Handler) handleSetDefaultModel(w http.ResponseWriter, r *http.Request) 
 	normalizeDefaultChainReferences(cfg)
 
 	if err := config.SaveConfig(h.configPath, cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -1073,14 +1073,14 @@ func (h *Handler) handleSetDefaultModel(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) handleUpdateDefaultChain(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
 
 	var req defaultChainRequest
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
@@ -1089,7 +1089,7 @@ func (h *Handler) handleUpdateDefaultChain(w http.ResponseWriter, r *http.Reques
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	normalizeStoredModelNames(cfg)
@@ -1097,7 +1097,7 @@ func (h *Handler) handleUpdateDefaultChain(w http.ResponseWriter, r *http.Reques
 	defaultModel := strings.TrimSpace(req.DefaultModel)
 	fallbacks, err := validateDefaultModelChain(cfg, defaultModel, req.FallbackChain)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Validation error: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Validation error: %v", err))
 		return
 	}
 
@@ -1105,7 +1105,7 @@ func (h *Handler) handleUpdateDefaultChain(w http.ResponseWriter, r *http.Reques
 	cfg.Agents.Defaults.ModelFallbacks = fallbacks
 
 	if err := config.SaveConfig(h.configPath, cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -1146,7 +1146,7 @@ func maskAPIKey(key string) string {
 func (h *Handler) handleFetchModels(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -1158,17 +1158,17 @@ func (h *Handler) handleFetchModels(w http.ResponseWriter, r *http.Request) {
 		ModelIndex *int   `json:"model_index,omitempty"`
 	}
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
 	if req.Provider == "" {
-		http.Error(w, "provider is required", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "provider is required")
 		return
 	}
 
 	if !providers.IsModelProviderFetchable(req.Provider) {
-		http.Error(w, fmt.Sprintf("provider %q does not support model listing", req.Provider), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("provider %q does not support model listing", req.Provider))
 		return
 	}
 
@@ -1185,7 +1185,7 @@ func (h *Handler) handleFetchModels(w http.ResponseWriter, r *http.Request) {
 		apiBase = providers.DefaultAPIBaseForProtocol(req.Provider)
 	}
 	if apiBase == "" {
-		http.Error(w, fmt.Sprintf("No default API base for provider %q", req.Provider), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("No default API base for provider %q", req.Provider))
 		return
 	}
 
@@ -1194,7 +1194,7 @@ func (h *Handler) handleFetchModels(w http.ResponseWriter, r *http.Request) {
 
 	models, err := fetchUpstreamModels(ctx, req.Provider, apiBase, apiKey)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to fetch models: %v", err), http.StatusBadGateway)
+		writeAPIError(w, http.StatusBadGateway, fmt.Sprintf("Failed to fetch models: %v", err))
 		return
 	}
 
@@ -1447,18 +1447,18 @@ func normalizeAPIBaseForCompare(raw string) string {
 func (h *Handler) handleTestModel(w http.ResponseWriter, r *http.Request) {
 	idx, err := strconv.Atoi(r.PathValue("index"))
 	if err != nil {
-		http.Error(w, "Invalid index", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Invalid index")
 		return
 	}
 
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
 	if idx < 0 || idx >= len(cfg.ModelList) {
-		http.Error(w, fmt.Sprintf("Index %d out of range (0-%d)", idx, len(cfg.ModelList)-1), http.StatusNotFound)
+		writeAPIErrorf(w, http.StatusNotFound, "Index %d out of range (0-%d)", idx, len(cfg.ModelList)-1)
 		return
 	}
 
@@ -1493,7 +1493,7 @@ func (h *Handler) handleTestModel(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleTestInlineModel(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 
@@ -1506,7 +1506,7 @@ func (h *Handler) handleTestInlineModel(w http.ResponseWriter, r *http.Request) 
 		ModelIndex *int   `json:"model_index"`
 	}
 	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Invalid JSON")
 		return
 	}
 

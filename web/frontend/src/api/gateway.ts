@@ -1,4 +1,4 @@
-import { launcherFetch } from "@/api/http"
+import { apiRequest } from "@/api/http"
 
 // API client for gateway process management.
 
@@ -26,18 +26,8 @@ interface GatewayActionResponse {
   log_run_id?: number
 }
 
-const BASE_URL = ""
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await launcherFetch(`${BASE_URL}${path}`, options)
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`)
-  }
-  return res.json() as Promise<T>
-}
-
 export async function getGatewayStatus(): Promise<GatewayStatusResponse> {
-  return request<GatewayStatusResponse>("/api/gateway/status")
+  return apiRequest<GatewayStatusResponse>("/api/gateway/status")
 }
 
 export async function getGatewayLogs(options?: {
@@ -52,29 +42,29 @@ export async function getGatewayLogs(options?: {
     params.set("log_run_id", options.log_run_id.toString())
   }
   const queryString = params.toString() ? `?${params.toString()}` : ""
-  return request<GatewayLogsResponse>(`/api/gateway/logs${queryString}`)
+  return apiRequest<GatewayLogsResponse>(`/api/gateway/logs${queryString}`)
 }
 
 export async function startGateway(): Promise<GatewayActionResponse> {
-  return request<GatewayActionResponse>("/api/gateway/start", {
+  return apiRequest<GatewayActionResponse>("/api/gateway/start", {
     method: "POST",
   })
 }
 
 export async function stopGateway(): Promise<GatewayActionResponse> {
-  return request<GatewayActionResponse>("/api/gateway/stop", {
+  return apiRequest<GatewayActionResponse>("/api/gateway/stop", {
     method: "POST",
   })
 }
 
 export async function restartGateway(): Promise<GatewayActionResponse> {
-  return request<GatewayActionResponse>("/api/gateway/restart", {
+  return apiRequest<GatewayActionResponse>("/api/gateway/restart", {
     method: "POST",
   })
 }
 
 export async function clearGatewayLogs(): Promise<GatewayActionResponse> {
-  return request<GatewayActionResponse>("/api/gateway/logs/clear", {
+  return apiRequest<GatewayActionResponse>("/api/gateway/logs/clear", {
     method: "POST",
   })
 }

@@ -9,3 +9,8 @@ config/
 .env.example
 *.md
 assets/
+
+# host-built deps (Windows binaries) must never enter the build context
+web/frontend/node_modules
+web/frontend/dist
+web/preview-dist

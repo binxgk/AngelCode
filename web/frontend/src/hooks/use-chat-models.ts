@@ -60,8 +60,11 @@ export function useChatModels({ isConnected }: UseChatModelsOptions) {
     async (modelName: string) => {
       if (modelName === defaultModelName) return
       const requestId = ++setDefaultRequestIdRef.current
+      const previousModelName = defaultModelName
       ++loadModelsRequestIdRef.current
       setSettingDefault(true)
+      // 乐观更新：先让 chip 立刻显示新模型，避免“点了没反应”的错觉
+      syncDefaultModelName(modelName)
 
       const request = setDefaultQueueRef.current
         .catch(() => {})
@@ -73,7 +76,9 @@ export function useChatModels({ isConnected }: UseChatModelsOptions) {
           if (requestId !== setDefaultRequestIdRef.current) return
 
           setModelList(data.models)
-          syncDefaultModelName(data.default_model)
+          // POST 已成功，默认模型就是刚选中的那个：直接用它，避免后端列表/回读
+          // 滞后时把 chip 弹回旧值（用户会以为“点了没反应”）。
+          syncDefaultModelName(modelName)
           const gateway = await refreshGatewayState({ force: true })
           if (requestId !== setDefaultRequestIdRef.current) return
           showSaveSuccessOrRestartToast(
@@ -88,6 +93,9 @@ export function useChatModels({ isConnected }: UseChatModelsOptions) {
         await request
       } catch (err) {
         if (requestId !== setDefaultRequestIdRef.current) return
+        // 失败回滚乐观更新
+        syncDefaultModelName(previousModelName)
+        void loadModels()
         console.error("Failed to set default model:", err)
         toast.error(err instanceof Error ? err.message : t("models.loadError"))
       } finally {
@@ -96,7 +104,7 @@ export function useChatModels({ isConnected }: UseChatModelsOptions) {
         }
       }
     },
-    [defaultModelName, syncDefaultModelName, t],
+    [defaultModelName, loadModels, syncDefaultModelName, t],
   )
 
   const defaultSelectableModels = useMemo(() => {
@@ -144,8 +152,14 @@ export function useChatModels({ isConnected }: UseChatModelsOptions) {
     [defaultSelectableModels],
   )
 
+  const hasSelectableModels = defaultSelectableModels.length > 0
+
   return {
     defaultModelName,
+    /** 已配置的模型（含暂时不可用的），用于绘制选择菜单 */
+    selectableModels: defaultSelectableModels,
+    /** 是否有可选模型（不再要求 available，避免整块菜单被隐藏） */
+    hasSelectableModels,
     hasAvailableModels,
     apiKeyModels,
     oauthModels,

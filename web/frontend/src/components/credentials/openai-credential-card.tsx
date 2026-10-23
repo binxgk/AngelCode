@@ -8,10 +8,9 @@ import {
 import { useTranslation } from "react-i18next"
 
 import type { OAuthProviderStatus } from "@/api/oauth"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-import { CredentialCard } from "./credential-card"
+import { CredentialRow } from "./credential-card"
 
 interface OpenAICredentialCardProps {
   status?: OAuthProviderStatus
@@ -23,6 +22,13 @@ interface OpenAICredentialCardProps {
   onStopLoading: () => void
   onSaveToken: () => void
   onAskLogout: () => void
+}
+
+const statusLabelKey: Record<string, string> = {
+  connected: "credentials.status.connected",
+  needs_refresh: "credentials.status.needsRefresh",
+  expired: "credentials.status.expired",
+  not_logged_in: "credentials.status.notLoggedIn",
 }
 
 export function OpenAICredentialCard({
@@ -42,119 +48,99 @@ export function OpenAICredentialCard({
   const deviceLoading = activeAction === "openai:device"
   const oauthLoading = browserLoading || deviceLoading
   const tokenLoading = activeAction === "openai:token"
+  const statusValue = status?.status ?? "not_logged_in"
 
   return (
-    <CredentialCard
-      title={
-        <span className="inline-flex items-center gap-2">
-          <span className="border-muted inline-flex size-6 items-center justify-center rounded-full border">
-            <IconBrandOpenai className="size-3.5" />
-          </span>
-          <span>OpenAI</span>
-        </span>
-      }
+    <CredentialRow
+      icon={<IconBrandOpenai className="size-4" />}
+      title="OpenAI"
       description={t("credentials.providers.openai.description")}
-      status={status?.status ?? "not_logged_in"}
-      authMethod={status?.auth_method}
+      status={statusValue}
+      statusLabel={t(statusLabelKey[statusValue] ?? statusLabelKey.not_logged_in)}
       details={
         status?.account_id ? (
-          <p>
+          <span className="mt-1 block font-mono text-[11px] text-ink-3">
             {t("credentials.labels.account")}: {status.account_id}
-          </p>
+          </span>
         ) : null
       }
       actions={
-        <div className="border-muted flex h-[120px] flex-col rounded-lg border p-3">
-          <div className="flex h-full flex-col gap-3">
-            <div className="min-h-8">
-              <div className="flex flex-nowrap items-center gap-2 overflow-x-auto">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={actionBusy}
-                  onClick={onStartBrowserOAuth}
-                >
-                  {browserLoading && (
-                    <IconLoader2 className="size-4 animate-spin" />
-                  )}
-                  <IconBrandOpenai className="size-4" />
-                  {t("credentials.actions.browser")}
-                </Button>
+        <>
+          <button
+            type="button"
+            className="ac-mini-btn"
+            disabled={actionBusy}
+            onClick={onStartBrowserOAuth}
+          >
+            {browserLoading ? (
+              <IconLoader2 className="animate-spin" />
+            ) : (
+              <IconBrandOpenai />
+            )}
+            {t("credentials.actions.browser")}
+          </button>
 
-                {oauthLoading && !deviceLoading && (
-                  <Button
-                    size="icon-xs"
-                    variant="secondary"
-                    onClick={onStopLoading}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <IconPlayerStopFilled className="size-4" />
-                  </Button>
-                )}
+          <button
+            type="button"
+            className="ac-mini-btn"
+            disabled={actionBusy}
+            onClick={onStartDeviceCode}
+          >
+            {deviceLoading ? (
+              <IconLoader2 className="animate-spin" />
+            ) : (
+              <IconClockHour4 />
+            )}
+            {t("credentials.actions.deviceCode")}
+          </button>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={actionBusy}
-                  onClick={onStartDeviceCode}
-                >
-                  {deviceLoading && (
-                    <IconLoader2 className="size-4 animate-spin" />
-                  )}
-                  <IconClockHour4 className="size-4" />
-                  {t("credentials.actions.deviceCode")}
-                </Button>
-              </div>
-            </div>
+          {oauthLoading && !deviceLoading && (
+            <button
+              type="button"
+              className="ac-mini-btn danger"
+              onClick={onStopLoading}
+              aria-label={t("credentials.actions.stopLoading")}
+            >
+              <IconPlayerStopFilled />
+            </button>
+          )}
 
-            <div className="min-h-9 flex-1">
-              <div className="flex h-full items-center gap-2">
-                <Input
-                  value={token}
-                  onChange={(e) => onTokenChange(e.target.value)}
-                  type="password"
-                  placeholder={t("credentials.fields.openaiToken")}
-                />
-                <Button
-                  size="sm"
-                  disabled={actionBusy || !token.trim()}
-                  onClick={onSaveToken}
-                >
-                  {tokenLoading && (
-                    <IconLoader2 className="size-4 animate-spin" />
-                  )}
-                  <IconKey className="size-4" />
-                  {t("credentials.actions.saveToken")}
-                </Button>
-                {tokenLoading && (
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={onStopLoading}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <IconPlayerStopFilled className="size-4" />
-                  </Button>
-                )}
-              </div>
-            </div>
+          <div className="ac-cred-token">
+            <Input
+              value={token}
+              onChange={(event) => onTokenChange(event.target.value)}
+              type="password"
+              placeholder={t("credentials.fields.openaiToken")}
+            />
+            <button
+              type="button"
+              className="ac-mini-btn"
+              disabled={actionBusy || !token.trim()}
+              onClick={onSaveToken}
+            >
+              {tokenLoading ? (
+                <IconLoader2 className="animate-spin" />
+              ) : (
+                <IconKey />
+              )}
+              {t("credentials.actions.saveToken")}
+            </button>
           </div>
-        </div>
+        </>
       }
       footer={
         status?.logged_in ? (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            className="ac-mini-btn danger"
             disabled={actionBusy}
             onClick={onAskLogout}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             {activeAction === "openai:logout" && (
-              <IconLoader2 className="size-4 animate-spin" />
+              <IconLoader2 className="animate-spin" />
             )}
             {t("credentials.actions.logout")}
-          </Button>
+          </button>
         ) : null
       }
     />

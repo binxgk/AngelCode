@@ -1,30 +1,62 @@
-import { IconLanguage, IconMoon, IconSun } from "@tabler/icons-react"
+import {
+  IconDeviceDesktop,
+  IconLanguage,
+  IconMoon,
+  IconSun,
+} from "@tabler/icons-react"
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 
 import { postLauncherDashboardSetup } from "@/api/launcher-auth"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { useTheme } from "@/hooks/use-theme"
+import { AngelMark } from "@/components/shell/angel-mark"
+import { THEME_LABELS, type ThemeMode, useTheme } from "@/hooks/use-theme"
+import { toggleAppLanguage } from "@/i18n"
+
+function AuthShell({ children }: { children: React.ReactNode }) {
+  const { themeMode, setThemeMode } = useTheme()
+
+  return (
+    <div className="bg-bone text-ink flex min-h-dvh flex-col">
+      <header className="flex h-14 shrink-0 items-center justify-end gap-2 px-5">
+        <div className="ac-seg">
+          {(["auto", "light", "dark"] as ThemeMode[]).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={themeMode === mode ? "on" : ""}
+              onClick={() => setThemeMode(mode)}
+              title={`主题：${THEME_LABELS[mode]}`}
+            >
+              {mode === "auto" ? (
+                <IconDeviceDesktop className="size-3.5" />
+              ) : mode === "light" ? (
+                <IconSun className="size-3.5" />
+              ) : (
+                <IconMoon className="size-3.5" />
+              )}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className="ac-icon-btn"
+          title="切换语言"
+          onClick={() => toggleAppLanguage()}
+        >
+          <IconLanguage />
+        </button>
+      </header>
+
+      <div className="flex flex-1 items-center justify-center px-5 pb-24">
+        <div className="w-full max-w-[380px]">{children}</div>
+      </div>
+    </div>
+  )
+}
 
 function LauncherSetupPage() {
-  const { t, i18n } = useTranslation()
-  const { theme, toggleTheme } = useTheme()
+  const { t } = useTranslation()
   const [password, setPassword] = React.useState("")
   const [confirm, setConfirm] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
@@ -53,91 +85,71 @@ function LauncherSetupPage() {
   }
 
   return (
-    <div className="bg-background text-foreground flex min-h-dvh flex-col">
-      <header className="border-border/50 flex h-14 shrink-0 items-center justify-end gap-2 border-b px-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="Language">
-              <IconLanguage className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => i18n.changeLanguage("en")}>
-              English
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => i18n.changeLanguage("zh")}>
-              简体中文
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button
-          variant="outline"
-          size="icon"
-          type="button"
-          onClick={() => toggleTheme()}
-          aria-label={theme === "dark" ? "Light mode" : "Dark mode"}
-        >
-          {theme === "dark" ? (
-            <IconSun className="size-4" />
-          ) : (
-            <IconMoon className="size-4" />
-          )}
-        </Button>
-      </header>
+    <AuthShell>
+      <div className="border-line-2 bg-paper rounded-2xl border p-7 shadow-md">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <div className="ac-glow mb-4 size-12 rounded-2xl">
+            <AngelMark style={{ color: "#fff" }} />
+          </div>
+          <h1 className="m-0 text-[20px] font-medium tracking-tight">
+            {t("launcherSetup.title")}
+          </h1>
+          <p className="text-ink-3 mt-1.5 text-[12.5px] leading-relaxed">
+            {t("launcherSetup.description")}
+          </p>
+        </div>
 
-      <div className="flex flex-1 items-center justify-center p-4">
-        <Card className="w-full max-w-md" size="sm">
-          <CardHeader>
-            <CardTitle>{t("launcherSetup.title")}</CardTitle>
-            <CardDescription>{t("launcherSetup.description")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="flex flex-col gap-4" onSubmit={onSubmit}>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="setup-password">
-                  {t("launcherSetup.passwordLabel")}
-                </Label>
-                <Input
-                  id="setup-password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t("launcherSetup.passwordPlaceholder")}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="setup-confirm">
-                  {t("launcherSetup.confirmLabel")}
-                </Label>
-                <Input
-                  id="setup-confirm"
-                  name="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  placeholder={t("launcherSetup.confirmPlaceholder")}
-                />
-              </div>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? t("labels.loading") : t("launcherSetup.submit")}
-              </Button>
-              {error ? (
-                <p className="text-destructive text-sm" role="alert">
-                  {error}
-                </p>
-              ) : null}
-            </form>
-          </CardContent>
-        </Card>
+        <form className="flex flex-col gap-3" onSubmit={onSubmit}>
+          <label className="block" htmlFor="setup-password">
+            <span className="text-ink-2 mb-1.5 block text-[12px] font-medium">
+              {t("launcherSetup.passwordLabel")}
+            </span>
+            <input
+              id="setup-password"
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t("launcherSetup.passwordPlaceholder")}
+              className="border-line-2 bg-paper-soft text-ink focus:border-clay focus:ring-clay/15 h-10 w-full rounded-lg border px-3 text-[13.5px] transition outline-none focus:ring-[3px]"
+            />
+          </label>
+          <label className="block" htmlFor="setup-confirm">
+            <span className="text-ink-2 mb-1.5 block text-[12px] font-medium">
+              {t("launcherSetup.confirmLabel")}
+            </span>
+            <input
+              id="setup-confirm"
+              name="confirm"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              placeholder={t("launcherSetup.confirmPlaceholder")}
+              className="border-line-2 bg-paper-soft text-ink focus:border-clay focus:ring-clay/15 h-10 w-full rounded-lg border px-3 text-[13.5px] transition outline-none focus:ring-[3px]"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-clay hover:bg-clay-deep mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg text-[13.5px] font-medium text-white shadow-sm transition disabled:cursor-default disabled:opacity-60"
+          >
+            {submitting ? t("labels.loading") : t("launcherSetup.submit")}
+          </button>
+          {error ? (
+            <p className="text-bad text-[12.5px]" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </form>
       </div>
-    </div>
+    </AuthShell>
   )
 }
 

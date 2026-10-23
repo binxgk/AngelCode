@@ -3,7 +3,6 @@ import {
   IconDatabase,
   IconLoader2,
   IconPlus,
-  IconStar,
 } from "@tabler/icons-react"
 import {
   useCallback,
@@ -995,47 +994,46 @@ export function ModelsPage() {
         </div>
       </PageHeader>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 sm:px-6">
-        <div className="pt-2">
-          {!defaultModelDraft && (
-            <div className="text-muted-foreground flex items-center gap-1.5 text-sm">
-              <span>{t("models.noDefaultHintPrefix")}</span>
-              <IconStar className="size-3.5 shrink-0" />
-              <span>{t("models.noDefaultHintSuffix")}</span>
-            </div>
-          )}
-          <p className="text-muted-foreground mt-1 text-sm">
-            {t("models.description")}
-          </p>
+      <div className="min-h-0 flex-1 overflow-y-auto px-1 sm:px-2">
+        <div className="pt-1">
           {!loading && (models.length > 0 || defaultModelDraft) && (
-            <div className="bg-muted/30 mt-4 rounded-xl border px-4 py-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-medium">
-                    {t("models.defaultChain.title")}
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    {defaultModelLabel
-                      ? t("models.defaultChain.summary", {
-                          model: defaultModelLabel,
-                          count: fallbackChainDraft.length,
-                        })
-                      : t("models.defaultChain.noDefault")}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
+            <div className="ac-row">
+              <div className="k">
+                <b>{t("models.defaultChain.title")}</b>
+                <span>
+                  {defaultModelLabel
+                    ? t("models.defaultChain.summary", {
+                        model: defaultModelLabel,
+                        count: fallbackChainDraft.length,
+                      })
+                    : t("models.defaultChain.noDefault")}
+                </span>
+              </div>
+              <div className="ctl">
+                <button
+                  type="button"
+                  className="ac-mini-btn clay"
+                  style={{ flex: "0 0 auto", height: 26 }}
                   onClick={() => setDefaultChainOpen(true)}
                 >
-                  <IconArrowsSort className="size-4" />
+                  <IconArrowsSort className="size-3.5" />
                   {t("models.defaultChain.manage")}
-                </Button>
+                </button>
               </div>
             </div>
           )}
+
+          {!loading && !defaultModelDraft && (
+            <div className="ac-row">
+              <div className="k">
+                <b>{t("models.noDefaultHintPrefix")}</b>
+                <span>{t("models.noDefaultHintSuffix")}</span>
+              </div>
+            </div>
+          )}
+
           {!loading && providerOptions.length === 0 && (
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="ac-grp-desc pt-2">
               {t("models.providerCatalogUnavailable")}
             </p>
           )}
@@ -1048,24 +1046,25 @@ export function ModelsPage() {
         )}
 
         {fetchError && (
-          <div className="bg-destructive/10 rounded-lg px-4 py-3 text-sm">
-            <p className="text-destructive">{fetchError}</p>
+          <div className="mt-3 rounded-lg border border-line bg-red-soft px-4 py-3 text-sm">
+            <p className="text-bad">{fetchError}</p>
             <div className="mt-3 flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
+              <button
+                type="button"
+                className="ac-mini-btn"
+                style={{ flex: "0 0 auto", height: 26 }}
                 onClick={() => {
                   void fetchModels()
                 }}
               >
                 {t("models.retry")}
-              </Button>
+              </button>
             </div>
           </div>
         )}
 
         {!loading && !savingChain && !modelUpdatePending && !fetchError && (
-          <div className="pb-8">
+          <div className="pb-6">
             {providerGroups.map((providerGroup) => (
               <ProviderSection
                 key={providerGroup.key}

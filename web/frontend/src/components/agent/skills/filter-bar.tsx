@@ -54,10 +54,13 @@ export function FilterBar({
       <div className="bg-border/60 hidden h-6 w-px sm:block" />
 
       <Select value={sourceFilter} onValueChange={onSourceFilterChange}>
-        <SelectTrigger className="hover:bg-background/50 focus:bg-background h-9 w-[140px] border-transparent bg-transparent shadow-none hover:ring-1 focus:ring-1">
+        <SelectTrigger
+          type="button"
+          className="border-border/60 bg-background/60 hover:bg-background focus:bg-background h-9 w-auto min-w-[136px] cursor-pointer shadow-xs hover:ring-1 focus:ring-1"
+        >
           <SelectValue placeholder={t("pages.agent.skills.source_label")} />
         </SelectTrigger>
-        <SelectContent align="end">
+        <SelectContent position="popper" align="end" sideOffset={6} className="z-[100]">
           <SelectItem value="all">
             {t("pages.agent.skills.origin.all")}
           </SelectItem>
@@ -75,9 +78,12 @@ export function FilterBar({
         value={sortOrder}
         onValueChange={(value) => onSortOrderChange(value as SkillSortOption)}
       >
-        <SelectTrigger className="hover:bg-background/50 focus:bg-background h-9 w-[160px] border-transparent bg-transparent shadow-none hover:ring-1 focus:ring-1">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-xs">
+        <SelectTrigger
+          type="button"
+          className="border-border/60 bg-background/60 hover:bg-background focus:bg-background h-9 w-auto min-w-[196px] cursor-pointer shadow-xs hover:ring-1 focus:ring-1"
+        >
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="text-muted-foreground shrink-0 text-xs">
               {t("pages.agent.skills.sort_label", {
                 defaultValue: "Sort by",
               })}
@@ -86,7 +92,7 @@ export function FilterBar({
             <SelectValue />
           </div>
         </SelectTrigger>
-        <SelectContent align="end">
+        <SelectContent position="popper" align="end" sideOffset={6} className="z-[100]">
           <SelectItem value="name-asc">
             {t("pages.agent.skills.sort.name_asc")}
           </SelectItem>
@@ -101,11 +107,14 @@ export function FilterBar({
 
       <div className="bg-border/60 hidden h-6 w-px sm:block" />
 
-      <div className="bg-background/50 ring-border/20 inline-flex items-center rounded-lg p-0.5 shadow-sm ring-1">
+      <div className="bg-background/50 ring-border/20 inline-flex h-9 items-center gap-0.5 rounded-lg p-0.5 shadow-sm ring-1">
         <button
           type="button"
+          aria-label={t("pages.agent.skills.layout_grouped", {
+            defaultValue: "分组视图",
+          })}
           className={cn(
-            "rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
+            "inline-flex h-8 items-center justify-center rounded-md px-2.5 text-xs font-medium transition-all",
             layoutMode === "grouped"
               ? "bg-background text-foreground ring-border/30 shadow-sm ring-1"
               : "text-muted-foreground hover:text-foreground",
@@ -116,8 +125,11 @@ export function FilterBar({
         </button>
         <button
           type="button"
+          aria-label={t("pages.agent.skills.layout_grid", {
+            defaultValue: "网格视图",
+          })}
           className={cn(
-            "rounded-md px-2.5 py-1.5 text-xs font-medium transition-all",
+            "inline-flex h-8 items-center justify-center rounded-md px-2.5 text-xs font-medium transition-all",
             layoutMode === "grid"
               ? "bg-background text-foreground ring-border/30 shadow-sm ring-1"
               : "text-muted-foreground hover:text-foreground",

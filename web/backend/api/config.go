@@ -36,13 +36,13 @@ func (h *Handler) applyRuntimeLogLevel() {
 func (h *Handler) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(cfg); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to encode response")
 	}
 }
 
@@ -52,28 +52,28 @@ func (h *Handler) handleGetConfig(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
 
 	var raw map[string]any
 	if err = json.Unmarshal(body, &raw); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 	if err = normalizeChannelArrayFields(raw); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid channel array field: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid channel array field: %v", err))
 		return
 	}
 	normalizedBody, err := json.Marshal(raw)
 	if err != nil {
-		http.Error(w, "Failed to normalize config payload", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to normalize config payload")
 		return
 	}
 	var cfg config.Config
 	if err = json.Unmarshal(normalizedBody, &cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 	cfg.Session.ApplyDmScope()
@@ -86,7 +86,7 @@ func (h *Handler) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 	// so that security-managed fields (e.g. pico token) are available.
 	err = cfg.SecurityCopyFrom(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to apply security config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to apply security config: %v", err))
 		return
 	}
 	applyConfigSecretsFromMap(&cfg, raw)
@@ -102,7 +102,7 @@ func (h *Handler) handleUpdateConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := config.SaveConfig(h.configPath, &cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -134,7 +134,7 @@ func execAllowRemoteOmitted(body []byte) bool {
 func (h *Handler) handlePatchConfig(w http.ResponseWriter, r *http.Request) {
 	patchBody, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -142,25 +142,25 @@ func (h *Handler) handlePatchConfig(w http.ResponseWriter, r *http.Request) {
 	// Validate the patch is valid JSON
 	var patch map[string]any
 	if err = json.Unmarshal(patchBody, &patch); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 
 	// Load existing config and marshal to a map for merging
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 	existing, err := json.Marshal(cfg)
 	if err != nil {
-		http.Error(w, "Failed to serialize current config", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to serialize current config")
 		return
 	}
 
 	var base map[string]any
 	if err = json.Unmarshal(existing, &base); err != nil {
-		http.Error(w, "Failed to parse current config", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to parse current config")
 		return
 	}
 
@@ -181,20 +181,20 @@ func (h *Handler) handlePatchConfig(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err = normalizeChannelArrayFields(base); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid channel array field: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid channel array field: %v", err))
 		return
 	}
 
 	// Convert merged map back to Config struct
 	merged, err := json.Marshal(base)
 	if err != nil {
-		http.Error(w, "Failed to serialize merged config", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to serialize merged config")
 		return
 	}
 
 	var newCfg config.Config
 	if err = json.Unmarshal(merged, &newCfg); err != nil {
-		http.Error(w, fmt.Sprintf("Merged config is invalid: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Merged config is invalid: %v", err))
 		return
 	}
 	newCfg.Session.ApplyDmScope()
@@ -203,7 +203,7 @@ func (h *Handler) handlePatchConfig(w http.ResponseWriter, r *http.Request) {
 	// Restore security fields (tokens/keys) from the loaded config before validation,
 	// because private fields are lost during JSON round-trip.
 	if err = newCfg.SecurityCopyFrom(h.configPath); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to apply security config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to apply security config: %v", err))
 		return
 	}
 	applyConfigSecretsFromMap(&newCfg, base)
@@ -219,7 +219,7 @@ func (h *Handler) handlePatchConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := config.SaveConfig(h.configPath, &newCfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -236,7 +236,7 @@ func (h *Handler) handlePatchConfig(w http.ResponseWriter, r *http.Request) {
 //	POST /api/config/reset
 func (h *Handler) handleResetConfig(w http.ResponseWriter, r *http.Request) {
 	if err := config.ResetToDefaults(h.configPath); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to reset config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to reset config: %v", err))
 		return
 	}
 
@@ -262,7 +262,7 @@ func (h *Handler) handleResetConfig(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleTestCommandPatterns(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "Failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -273,7 +273,7 @@ func (h *Handler) handleTestCommandPatterns(w http.ResponseWriter, r *http.Reque
 		Command       string   `json:"command"`
 	}
 	if err := json.Unmarshal(body, &req); err != nil {
-		http.Error(w, fmt.Sprintf("Invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("Invalid JSON: %v", err))
 		return
 	}
 

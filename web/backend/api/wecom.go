@@ -94,13 +94,13 @@ func (h *Handler) handleStartWecomFlow(w http.ResponseWriter, r *http.Request) {
 
 	session, err := fetchWecomQRCode(ctx)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get QR code: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to get QR code: %v", err))
 		return
 	}
 
 	dataURI, err := generateQRDataURI(session.Data.AuthURL)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to generate QR image: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to generate QR image: %v", err))
 		return
 	}
 
@@ -132,13 +132,13 @@ func (h *Handler) handleStartWecomFlow(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handlePollWecomFlow(w http.ResponseWriter, r *http.Request) {
 	flowID := strings.TrimSpace(r.PathValue("id"))
 	if flowID == "" {
-		http.Error(w, "missing flow id", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "missing flow id")
 		return
 	}
 
 	flow, ok := h.getWecomFlow(flowID)
 	if !ok {
-		http.Error(w, "flow not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "flow not found")
 		return
 	}
 

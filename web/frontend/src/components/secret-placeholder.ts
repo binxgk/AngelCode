@@ -21,3 +21,21 @@ export function maskedSecretPlaceholder(value: unknown, fallback = ""): string {
   const suffix = secret.slice(-4)
   return `${prefix}*****${suffix}`
 }
+
+/**
+ * 判断用户输入的值是否是后端返回的掩码（如 "****"、"sk-****-1"）。
+ *
+ * 后端 `maskAPIKey` 会把密钥替换成掩码返回；如果用户把掩码原样提交回去，
+ * 真正的密钥就会被覆盖成 "****"。提交前应把这类值视为"未修改"。
+ */
+export function isMaskedSecretValue(value: unknown): boolean {
+  if (typeof value !== "string") {
+    return false
+  }
+  const trimmed = value.trim()
+  if (trimmed === "") {
+    return false
+  }
+  // 纯星号，或含连续 4 个及以上星号
+  return /^\*+$/.test(trimmed) || /\*{4,}/.test(trimmed)
+}

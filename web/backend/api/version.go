@@ -68,7 +68,7 @@ func (h *Handler) handleGetVersion(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(versionInfo); err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, "Failed to encode response")
 		return
 	}
 }

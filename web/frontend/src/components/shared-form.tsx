@@ -1,5 +1,5 @@
 import { IconChevronDown, IconEye, IconEyeOff } from "@tabler/icons-react"
-import { type ReactNode, useState } from "react"
+import { type ReactNode, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 import {
@@ -223,12 +223,29 @@ interface AdvancedSectionProps {
 export function AdvancedSection({ children }: AdvancedSectionProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleToggle = () => {
+    const next = !open
+    setOpen(next)
+    if (next) {
+      // 展开后把区块滚到可视区域，避免内容被底部固定栏遮挡
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          containerRef.current?.scrollIntoView({
+            block: "start",
+            behavior: "smooth",
+          })
+        })
+      })
+    }
+  }
 
   return (
-    <div className="border-border/50 rounded-lg border">
+    <div className="border-border/50 rounded-lg border" ref={containerRef}>
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="hover:bg-muted/40 flex w-full items-center justify-between rounded-lg px-4 py-3 transition-colors"
       >
         <span className="text-muted-foreground text-sm">

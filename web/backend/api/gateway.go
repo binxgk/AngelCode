@@ -1220,7 +1220,7 @@ func (h *Handler) handleGatewayStart(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			gateway.mu.Unlock()
 			logger.ErrorC("gateway", fmt.Sprintf("Failed to attach to running gateway (PID: %d): %v", pid, err))
-			http.Error(w, fmt.Sprintf("Failed to attach to gateway: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to attach to gateway: %v", err))
 			return
 		}
 		gateway.pidData = pidData
@@ -1263,7 +1263,7 @@ func (h *Handler) handleGatewayStart(w http.ResponseWriter, r *http.Request) {
 
 	pid, err := h.startGatewayLocked("starting", 0)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to start gateway: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to start gateway: %v", err))
 		return
 	}
 
@@ -1293,7 +1293,7 @@ func (h *Handler) handleGatewayStop(w http.ResponseWriter, r *http.Request) {
 
 	pid, err := stopGatewayLocked()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to stop gateway (PID %d): %v", pid, err), http.StatusInternalServerError)
+		writeAPIErrorf(w, http.StatusInternalServerError, "Failed to stop gateway (PID %d): %v", pid, err)
 		return
 	}
 
@@ -1399,7 +1399,7 @@ func (h *Handler) handleGatewayRestart(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		http.Error(w, fmt.Sprintf("Failed to restart gateway: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to restart gateway: %v", err))
 		return
 	}
 

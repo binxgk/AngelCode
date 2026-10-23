@@ -1,4 +1,4 @@
-import { launcherFetch } from "@/api/http"
+import { apiRequest } from "@/api/http"
 import { refreshGatewayState } from "@/store/gateway"
 
 // API client for model list management.
@@ -80,30 +80,14 @@ export interface DefaultChain {
   fallback_chain: string[]
 }
 
-const BASE_URL = ""
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await launcherFetch(`${BASE_URL}${path}`, options)
-  if (!res.ok) {
-    let detail = ""
-    try {
-      detail = await res.text()
-    } catch {
-      // ignore
-    }
-    throw new Error(detail || `API error: ${res.status} ${res.statusText}`)
-  }
-  return res.json() as Promise<T>
-}
-
 export async function getModels(): Promise<ModelsListResponse> {
-  return request<ModelsListResponse>("/api/models")
+  return apiRequest<ModelsListResponse>("/api/models")
 }
 
 export async function addModel(
   model: Partial<ModelInfo>,
 ): Promise<ModelActionResponse> {
-  return request<ModelActionResponse>("/api/models", {
+  return apiRequest<ModelActionResponse>("/api/models", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(model),
@@ -114,7 +98,7 @@ export async function updateModel(
   index: number,
   model: Partial<ModelInfo>,
 ): Promise<ModelActionResponse> {
-  return request<ModelActionResponse>(`/api/models/${index}`, {
+  return apiRequest<ModelActionResponse>(`/api/models/${index}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(model),
@@ -122,7 +106,7 @@ export async function updateModel(
 }
 
 export async function deleteModel(index: number): Promise<ModelActionResponse> {
-  return request<ModelActionResponse>(`/api/models/${index}`, {
+  return apiRequest<ModelActionResponse>(`/api/models/${index}`, {
     method: "DELETE",
   })
 }
@@ -130,7 +114,7 @@ export async function deleteModel(index: number): Promise<ModelActionResponse> {
 export async function setDefaultModel(
   modelName: string,
 ): Promise<ModelActionResponse> {
-  const response = await request<ModelActionResponse>("/api/models/default", {
+  const response = await apiRequest<ModelActionResponse>("/api/models/default", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model_name: modelName }),
@@ -140,14 +124,10 @@ export async function setDefaultModel(
   return response
 }
 
-export async function getDefaultChain(): Promise<DefaultChain> {
-  return request<DefaultChain>("/api/models/default-chain")
-}
-
 export async function updateDefaultChain(
   payload: DefaultChain,
 ): Promise<DefaultChain> {
-  return request<DefaultChain>("/api/models/default-chain", {
+  return apiRequest<DefaultChain>("/api/models/default-chain", {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -162,7 +142,7 @@ export interface TestModelResponse {
 }
 
 export async function testModel(index: number): Promise<TestModelResponse> {
-  return request<TestModelResponse>(`/api/models/${index}/test`, {
+  return apiRequest<TestModelResponse>(`/api/models/${index}/test`, {
     method: "POST",
   })
 }
@@ -179,7 +159,7 @@ export interface TestModelInlineRequest {
 export async function testModelInline(
   params: TestModelInlineRequest,
 ): Promise<TestModelResponse> {
-  return request<TestModelResponse>("/api/models/test-inline", {
+  return apiRequest<TestModelResponse>("/api/models/test-inline", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
@@ -207,7 +187,7 @@ export interface FetchModelsResponse {
 export async function fetchUpstreamModels(
   req: FetchModelsRequest,
 ): Promise<FetchModelsResponse> {
-  return request<FetchModelsResponse>("/api/models/fetch", {
+  return apiRequest<FetchModelsResponse>("/api/models/fetch", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(req),
@@ -237,11 +217,11 @@ interface CatalogListResponse {
 }
 
 export async function getCatalogs(): Promise<CatalogListResponse> {
-  return request<CatalogListResponse>("/api/models/catalog")
+  return apiRequest<CatalogListResponse>("/api/models/catalog")
 }
 
 export async function deleteCatalog(id: string): Promise<void> {
-  await request<Record<string, never>>(
+  await apiRequest<Record<string, never>>(
     `/api/models/catalog/${encodeURIComponent(id)}`,
     {
       method: "DELETE",

@@ -86,12 +86,21 @@ export function ToolLibraryTab({
               onStatusFilterChange(value as ToolStatusFilter)
             }
           >
-            <SelectTrigger className="bg-muted/40 hover:bg-muted/60 focus:ring-foreground/5 focus:border-border/80 h-11 w-full rounded-xl border-transparent shadow-none transition-all duration-300 sm:w-36">
+            <SelectTrigger
+              type="button"
+              aria-label={t("pages.agent.tools.filter.all", "All Status")}
+              className="bg-muted/40 hover:bg-muted/60 focus:ring-foreground/5 focus:border-border/80 h-11 w-full cursor-pointer rounded-xl border-transparent pr-2 whitespace-nowrap shadow-none transition-all duration-300 sm:h-9 sm:w-auto sm:min-w-[136px]"
+            >
               <SelectValue
                 placeholder={t("pages.agent.tools.filter.all", "All Status")}
               />
             </SelectTrigger>
-            <SelectContent className="border-border/40 rounded-xl shadow-lg">
+            <SelectContent
+              position="popper"
+              align="end"
+              sideOffset={6}
+              className="border-border/40 z-[100] rounded-xl shadow-lg"
+            >
               <SelectItem value="all">
                 {t("pages.agent.tools.filter.all", "All Status")}
               </SelectItem>

@@ -1138,7 +1138,7 @@ func TestHandleAddModel_RejectsUnsupportedProvider(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `provider "not-supported" is not supported`) {
+	if !apiErrorContains(rec.Body.Bytes(), `provider "not-supported" is not supported`) {
 		t.Fatalf("body = %q, want unsupported provider error", rec.Body.String())
 	}
 }
@@ -1301,7 +1301,7 @@ func TestHandleAddModel_RejectsMissingCLIProviderCommand(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `provider "claude-cli" is not available for new models`) {
+	if !apiErrorContains(rec.Body.Bytes(), `provider "claude-cli" is not available for new models`) {
 		t.Fatalf("body = %q, want missing cli command error", rec.Body.String())
 	}
 }
@@ -2105,7 +2105,7 @@ func TestHandleAddModel_RejectsUnsupportedElevenLabsModelID(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d, body=%s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `provider "elevenlabs" only supports model "scribe_v1"`) {
+	if !apiErrorContains(rec.Body.Bytes(), `provider "elevenlabs" only supports model "scribe_v1"`) {
 		t.Fatalf("body = %q, want elevenlabs model validation error", rec.Body.String())
 	}
 }

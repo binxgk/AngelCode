@@ -1,6 +1,4 @@
-import { IconAdjustments } from "@tabler/icons-react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -131,14 +129,7 @@ export function RawConfigPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title={t("pages.config.raw_json_title")}>
-        <Button variant="outline" asChild>
-          <Link to="/config">
-            <IconAdjustments className="size-4" />
-            {t("pages.config.back_to_visual")}
-          </Link>
-        </Button>
-      </PageHeader>
+      <PageHeader title={t("pages.config.raw_json_title")} />
 
       <div className="flex min-h-0 flex-1 flex-col p-1 lg:p-3 lg:p-6">
         <div className="mx-auto flex h-full min-h-0 w-full max-w-[1000px] flex-col">

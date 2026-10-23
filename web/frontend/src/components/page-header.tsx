@@ -1,7 +1,6 @@
-import { IconMenu2 } from "@tabler/icons-react"
 import type { ReactNode } from "react"
 
-import { SidebarTrigger } from "@/components/ui/sidebar"
+import { useEmbedded } from "@/components/shell/embed-context-value"
 import { cn } from "@/lib/utils"
 
 interface PageHeaderProps {
@@ -11,24 +10,40 @@ interface PageHeaderProps {
   className?: string
 }
 
+/**
+ * 页面头。独立路由下显示标题与操作；嵌入设置抽屉时只渲染操作区，
+ * 避免与抽屉标题重复。
+ */
 export function PageHeader({
   title,
   titleExtra,
   children,
   className,
 }: PageHeaderProps) {
+  const embedded = useEmbedded()
+
+  if (embedded) {
+    if (!children && !titleExtra) {
+      return null
+    }
+    return (
+      <div className={cn("ac-embed-toolbar", className)}>
+        {titleExtra}
+        <span className="ac-grow" />
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
-        "z-40 flex h-14 shrink-0 items-center justify-between px-6 pt-2",
+        "flex h-14 shrink-0 items-center justify-between gap-4 px-6 pt-2",
         className,
       )}
     >
-      <div className="flex items-center gap-4">
-        <SidebarTrigger className="border-border/60 bg-background text-muted-foreground hover:bg-accent hover:text-foreground hidden h-9 w-9 rounded-lg border sm:flex [&>svg]:size-5">
-          <IconMenu2 />
-        </SidebarTrigger>
-        <h2 className="text-foreground/90 text-xl font-medium tracking-tight">
+      <div className="flex min-w-0 items-center gap-3">
+        <h2 className="text-ink truncate text-xl font-medium tracking-tight">
           {title}
         </h2>
         {titleExtra}

@@ -51,7 +51,7 @@ func (h *Handler) createWsProxy(origProtocol string, upstreamProtocol string) *h
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			logger.Errorf("Failed to proxy WebSocket: %v", err)
-			http.Error(w, "Gateway unavailable: "+err.Error(), http.StatusBadGateway)
+			writeAPIError(w, http.StatusBadGateway, "Gateway unavailable: "+err.Error())
 		},
 	}
 	return wsProxy
@@ -66,7 +66,7 @@ func (h *Handler) createPicoHTTPProxy(token string) *httputil.ReverseProxy {
 		},
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
 			logger.Errorf("Failed to proxy Pico HTTP request: %v", err)
-			http.Error(w, "Gateway unavailable: "+err.Error(), http.StatusBadGateway)
+			writeAPIError(w, http.StatusBadGateway, "Gateway unavailable: "+err.Error())
 		},
 	}
 }
@@ -152,14 +152,14 @@ func (h *Handler) handleWebSocketProxy() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !h.gatewayAvailableForProxy() {
 			logger.Warnf("Gateway not available for WebSocket proxy")
-			http.Error(w, "Gateway not available", http.StatusServiceUnavailable)
+			writeAPIError(w, http.StatusServiceUnavailable, "Gateway not available")
 			return
 		}
 
 		upstreamProtocol := picoGatewayProtocol()
 		if upstreamProtocol == "" {
 			logger.Warn("Pico token unavailable for WebSocket proxy")
-			http.Error(w, "Pico channel not configured", http.StatusServiceUnavailable)
+			writeAPIError(w, http.StatusServiceUnavailable, "Pico channel not configured")
 			return
 		}
 
@@ -176,7 +176,7 @@ func (h *Handler) handlePicoMediaProxy() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !h.gatewayAvailableForProxy() {
 			logger.Warnf("Gateway not available for Pico media proxy")
-			http.Error(w, "Gateway not available", http.StatusServiceUnavailable)
+			writeAPIError(w, http.StatusServiceUnavailable, "Gateway not available")
 			return
 		}
 
@@ -186,7 +186,7 @@ func (h *Handler) handlePicoMediaProxy() http.HandlerFunc {
 
 		if picoToken == "" {
 			logger.Warnf("Missing Pico token for media proxy")
-			http.Error(w, "Invalid Pico token", http.StatusForbidden)
+			writeAPIError(w, http.StatusForbidden, "Invalid Pico token")
 			return
 		}
 
@@ -200,7 +200,7 @@ func (h *Handler) handlePicoMediaProxy() http.HandlerFunc {
 func (h *Handler) handleGetPicoInfo(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
@@ -214,7 +214,7 @@ func (h *Handler) handleGetPicoInfo(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleRegenPicoToken(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 
@@ -229,7 +229,7 @@ func (h *Handler) handleRegenPicoToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := config.SaveConfig(h.configPath, cfg); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to save config: %v", err))
 		return
 	}
 
@@ -285,14 +285,14 @@ func (h *Handler) EnsurePicoChannel() (bool, error) {
 func (h *Handler) handlePicoSetup(w http.ResponseWriter, r *http.Request) {
 	changed, err := h.EnsurePicoChannel()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	// Reload config (EnsurePicoChannel may have modified it).
 	cfg, err := config.LoadConfig(h.configPath)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to load config: %v", err))
 		return
 	}
 

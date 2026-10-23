@@ -7,10 +7,9 @@ import {
 import { useTranslation } from "react-i18next"
 
 import type { OAuthProviderStatus } from "@/api/oauth"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-import { CredentialCard } from "./credential-card"
+import { CredentialRow } from "./credential-card"
 
 interface AnthropicCredentialCardProps {
   status?: OAuthProviderStatus
@@ -20,6 +19,13 @@ interface AnthropicCredentialCardProps {
   onStopLoading: () => void
   onSaveToken: () => void
   onAskLogout: () => void
+}
+
+const statusLabelKey: Record<string, string> = {
+  connected: "credentials.status.connected",
+  needs_refresh: "credentials.status.needsRefresh",
+  expired: "credentials.status.expired",
+  not_logged_in: "credentials.status.notLoggedIn",
 }
 
 export function AnthropicCredentialCard({
@@ -34,73 +40,65 @@ export function AnthropicCredentialCard({
   const { t } = useTranslation()
   const actionBusy = activeAction !== ""
   const tokenLoading = activeAction === "anthropic:token"
-  const stopLabel = t("credentials.actions.stopLoading")
+  const statusValue = status?.status ?? "not_logged_in"
 
   return (
-    <CredentialCard
-      title={
-        <span className="inline-flex items-center gap-2">
-          <span className="border-muted inline-flex size-6 items-center justify-center rounded-full border">
-            <IconSparkles className="size-3.5" />
-          </span>
-          <span>Anthropic</span>
-        </span>
-      }
+    <CredentialRow
+      icon={<IconSparkles className="size-4" />}
+      title="Anthropic"
       description={t("credentials.providers.anthropic.description")}
-      status={status?.status ?? "not_logged_in"}
-      authMethod={status?.auth_method}
+      status={statusValue}
+      statusLabel={t(statusLabelKey[statusValue] ?? statusLabelKey.not_logged_in)}
       actions={
-        <div className="border-muted flex h-[120px] flex-col justify-center rounded-lg border p-3">
-          <div className="flex h-full flex-col gap-3">
-            <div className="flex h-full items-center gap-2">
-              <Input
-                value={token}
-                onChange={(e) => onTokenChange(e.target.value)}
-                type="password"
-                placeholder={t("credentials.fields.anthropicToken")}
-              />
-              <Button
-                size="sm"
-                className="w-fit"
-                disabled={actionBusy || !token.trim()}
-                onClick={onSaveToken}
-              >
-                {tokenLoading && (
-                  <IconLoader2 className="size-4 animate-spin" />
-                )}
-                <IconKey className="size-4" />
-                {t("credentials.actions.saveToken")}
-              </Button>
-              {tokenLoading && (
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={onStopLoading}
-                  aria-label={stopLabel}
-                  title={stopLabel}
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <IconPlayerStopFilled className="size-4" />
-                </Button>
+        <>
+          <div className="ac-cred-token">
+            <Input
+              value={token}
+              onChange={(event) => onTokenChange(event.target.value)}
+              type="password"
+              placeholder={t("credentials.fields.anthropicToken")}
+            />
+            <button
+              type="button"
+              className="ac-mini-btn"
+              disabled={actionBusy || !token.trim()}
+              onClick={onSaveToken}
+            >
+              {tokenLoading ? (
+                <IconLoader2 className="animate-spin" />
+              ) : (
+                <IconKey />
               )}
-            </div>
+              {t("credentials.actions.saveToken")}
+            </button>
           </div>
-        </div>
+
+          {tokenLoading && (
+            <button
+              type="button"
+              className="ac-mini-btn danger"
+              onClick={onStopLoading}
+              aria-label={t("credentials.actions.stopLoading")}
+              title={t("credentials.actions.stopLoading")}
+            >
+              <IconPlayerStopFilled />
+            </button>
+          )}
+        </>
       }
       footer={
         status?.logged_in ? (
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            className="ac-mini-btn danger"
             disabled={actionBusy}
             onClick={onAskLogout}
-            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             {activeAction === "anthropic:logout" && (
-              <IconLoader2 className="size-4 animate-spin" />
+              <IconLoader2 className="animate-spin" />
             )}
             {t("credentials.actions.logout")}
-          </Button>
+          </button>
         ) : null
       }
     />

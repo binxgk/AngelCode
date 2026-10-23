@@ -86,7 +86,7 @@ export function LogLevelSelect() {
         onValueChange={handleLogLevelChange}
         disabled={savingLogLevel}
       >
-        <SelectTrigger size="sm" className="w-28">
+        <SelectTrigger size="sm" className="h-[26px] w-24 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="end">

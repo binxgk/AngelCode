@@ -1,0 +1,71 @@
+# ============================================================
+# WSL/CN 网络定制版（不改动官方 Dockerfile.launcher）
+#   - Alpine apk 走阿里云镜像（构建时临时替换，产物里还原）
+#   - Go 模块走 goproxy.cn
+#   - 编译并行度限制为 6，避免在 3.7G 内存的 WSL 里 OOM
+# ============================================================
+# Stage 1: Build frontend assets (Node.js + pnpm)
+# ============================================================
+FROM node:24-alpine3.23 AS frontend
+
+RUN corepack enable && corepack prepare pnpm@latest --activate && \
+    pnpm config set registry https://registry.npmmirror.com
+
+WORKDIR /src/web/frontend
+
+COPY web/frontend/package.json web/frontend/pnpm-lock.yaml ./
+RUN CI=true pnpm install --frozen-lockfile
+
+COPY web/frontend/ ./
+RUN pnpm build:backend
+
+# ============================================================
+# Stage 2: Build Go binaries (picoclaw + picoclaw-launcher)
+# ============================================================
+FROM golang:1.25-alpine AS builder
+
+RUN sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' /etc/apk/repositories && \
+    apk add --no-cache git make
+
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOTOOLCHAIN=local
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+COPY --from=frontend /src/web/backend/dist web/backend/dist
+
+RUN make build GOFLAGS="-v -tags=goolm,stdjson -p=6"
+
+RUN CONFIG_PKG=github.com/sipeed/picoclaw/pkg/config && \
+    VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo dev) && \
+    GIT_COMMIT=$(git rev-parse --short=8 HEAD 2>/dev/null || echo dev) && \
+    BUILD_TIME=$(date +%FT%T%z) && \
+    GO_VERSION=$(go env GOVERSION) && \
+    CGO_ENABLED=0 go build -p=6 -v -tags goolm,stdjson \
+      -ldflags "-X ${CONFIG_PKG}.Version=${VERSION} -X ${CONFIG_PKG}.GitCommit=${GIT_COMMIT} -X ${CONFIG_PKG}.BuildTime=${BUILD_TIME} -X ${CONFIG_PKG}.GoVersion=${GO_VERSION} -s -w" \
+      -o build/picoclaw-launcher ./web/backend/
+
+# ============================================================
+# Stage 3: Minimal runtime image
+# ============================================================
+FROM alpine:3.23
+
+RUN sed -i 's|dl-cdn.alpinelinux.org|mirrors.aliyun.com|g' /etc/apk/repositories && \
+    apk add --no-cache ca-certificates tzdata curl && \
+    sed -i 's|mirrors.aliyun.com|dl-cdn.alpinelinux.org|g' /etc/apk/repositories
+
+# NAS 场景：探活 launcher 控制台端口（18790 是网关端口，需完成配置/热加载后才监听，
+# 与官方 docker/synology/Dockerfile 保持一致探 18800）
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl -fsS http://127.0.0.1:18800/api/auth/status >/dev/null || exit 1
+
+COPY --from=builder /src/build/picoclaw /usr/local/bin/picoclaw
+COPY --from=builder /src/build/picoclaw-launcher /usr/local/bin/picoclaw-launcher
+
+ENTRYPOINT ["picoclaw-launcher"]
+CMD ["-console", "-public", "-no-browser"]

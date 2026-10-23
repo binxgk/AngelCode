@@ -1,0 +1,39 @@
+# ============================================================
+# Angel Code / PicoClaw — 群晖 Container Manager 部署配置
+#
+# 用法（在群晖 SSH 中）：
+#   cd /volume1/docker/angel-code
+#   docker compose up -d
+#
+# 首次启动后访问 http://<群晖IP>:18800 ，按提示设置控制台密码。
+# ============================================================
+
+services:
+  angel-code:
+    image: angel-code:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # 群晖 x86 机型用 amd64；ARM 机型（DS223 等）改为 arm64
+        TARGETARCH: amd64
+    container_name: angel-code
+    restart: unless-stopped
+    ports:
+      - "18800:18800"   # Web 控制台
+      - "18790:18790"   # 网关 API / 频道回调
+    environment:
+      TZ: Asia/Shanghai
+      PICOCLAW_HOME: /data
+      PICOCLAW_GATEWAY_HOST: 0.0.0.0
+      # 可选：固定控制台监听地址
+      # PICOCLAW_LAUNCHER_HOST: 0.0.0.0
+    volumes:
+      # 所有配置、会话、工作区、登录密码库都保存在这里，升级镜像不丢数据
+      - ./data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:18800/api/auth/status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

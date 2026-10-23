@@ -1,118 +1,100 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useAtomValue } from "jotai"
+import { useCallback, useEffect, useRef } from "react"
 import { useTranslation } from "react-i18next"
 
-import { type SessionSummary, deleteSession, getSessions } from "@/api/sessions"
+import {
+  type SessionsState,
+  loadSessions,
+  removeSession,
+  sessionsAtom,
+} from "@/store/sessions"
 
 const LIMIT = 20
 
 interface UseSessionHistoryOptions {
   activeSessionId: string
   onDeletedActiveSession: () => void
+  /** 挂载时自动加载（默认 true） */
+  autoLoad?: boolean
 }
 
+export interface UseSessionHistoryResult {
+  sessions: SessionsState["sessions"]
+  hasMore: boolean
+  loading: boolean
+  loadError: boolean
+  loadErrorMessage: string
+  observerRef: React.RefObject<HTMLDivElement | null>
+  loadSessions: (reset?: boolean) => Promise<void>
+  handleDeleteSession: (id: string) => Promise<void>
+}
+
+/**
+ * 会话列表读取封装。
+ *
+ * 数据来自全局 sessionsAtom，因此侧栏与设置「历史」分区共享同一份
+ * 结果，不会重复请求 /api/sessions。
+ */
 export function useSessionHistory({
   activeSessionId,
   onDeletedActiveSession,
-}: UseSessionHistoryOptions) {
+  autoLoad = true,
+}: UseSessionHistoryOptions): UseSessionHistoryResult {
   const { t } = useTranslation()
   const observerRef = useRef<HTMLDivElement>(null)
-  const [sessions, setSessions] = useState<SessionSummary[]>([])
-  const [offset, setOffset] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [loadError, setLoadError] = useState(false)
-
-  const loadSessions = useCallback(
-    async (reset = true) => {
-      try {
-        const currentOffset = reset ? 0 : offset
-        if (reset) {
-          setLoadError(false)
-          setHasMore(true)
-          setOffset(0)
-        }
-
-        const data = await getSessions(currentOffset, LIMIT)
-        setLoadError(false)
-
-        if (data.length < LIMIT) {
-          setHasMore(false)
-        }
-
-        if (reset) {
-          setSessions(data)
-        } else {
-          setSessions((prev) => {
-            const existingIds = new Set(prev.map((s) => s.id))
-            const newItems = data.filter((s) => !existingIds.has(s.id))
-            return [...prev, ...newItems]
-          })
-        }
-
-        setOffset(currentOffset + data.length)
-      } catch (err) {
-        console.error("Failed to fetch session history:", err)
-        setLoadError(true)
-        if (!reset) {
-          setHasMore(false)
-        }
-      } finally {
-        setIsLoadingMore(false)
-      }
-    },
-    [offset],
-  )
+  const state = useAtomValue(sessionsAtom)
 
   useEffect(() => {
-    if (!observerRef.current || !hasMore || isLoadingMore || loadError) return
+    if (!autoLoad) return
+    if (state.loaded || state.loading) return
+    void loadSessions(true)
+  }, [autoLoad, state.loaded, state.loading])
+
+  // 无限滚动：观察哨兵元素
+  useEffect(() => {
+    const node = observerRef.current
+    if (!node || !state.hasMore || state.loading || state.error) return
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasMore &&
-          !isLoadingMore &&
-          !loadError
-        ) {
-          setIsLoadingMore(true)
+        if (entries[0].isIntersecting && !state.loading) {
           void loadSessions(false)
         }
       },
       { threshold: 0.1 },
     )
 
-    observer.observe(observerRef.current)
+    observer.observe(node)
     return () => observer.disconnect()
-  }, [hasMore, isLoadingMore, loadError, loadSessions])
+  }, [state.hasMore, state.loading, state.error])
 
   const handleDeleteSession = useCallback(
     async (id: string) => {
       try {
-        const deletedLoadedSession = sessions.some(
+        const deletedLoadedSession = state.sessions.some(
           (session) => session.id === id,
         )
-        await deleteSession(id)
-        setSessions((prev) => prev.filter((s) => s.id !== id))
-        if (deletedLoadedSession) {
-          setOffset((prev) => Math.max(prev - 1, 0))
-        }
-        if (id === activeSessionId) {
+        await removeSession(id)
+        if (deletedLoadedSession && id === activeSessionId) {
           onDeletedActiveSession()
         }
       } catch (err) {
         console.error("Failed to delete session:", err)
       }
     },
-    [activeSessionId, onDeletedActiveSession, sessions],
+    [activeSessionId, onDeletedActiveSession, state.sessions],
   )
 
   return {
-    sessions,
-    hasMore,
-    loadError,
+    sessions: state.sessions,
+    hasMore: state.hasMore,
+    loading: state.loading,
+    loadError: state.error,
     loadErrorMessage: t("chat.historyLoadFailed"),
     observerRef,
     loadSessions,
     handleDeleteSession,
   }
 }
+
+export { LIMIT }

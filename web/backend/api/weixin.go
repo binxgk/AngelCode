@@ -68,19 +68,19 @@ func (h *Handler) handleStartWeixinFlow(w http.ResponseWriter, r *http.Request) 
 
 	api, err := weixin.NewApiClient(weixinBaseURL, "", "")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to create weixin client: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to create weixin client: %v", err))
 		return
 	}
 
 	qrResp, err := api.GetQRCode(ctx, weixinBotType)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to get QR code: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to get QR code: %v", err))
 		return
 	}
 
 	dataURI, err := generateQRDataURI(qrResp.QrcodeImgContent)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to generate QR image: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to generate QR image: %v", err))
 		return
 	}
 
@@ -112,13 +112,13 @@ func (h *Handler) handleStartWeixinFlow(w http.ResponseWriter, r *http.Request) 
 func (h *Handler) handlePollWeixinFlow(w http.ResponseWriter, r *http.Request) {
 	flowID := strings.TrimSpace(r.PathValue("id"))
 	if flowID == "" {
-		http.Error(w, "missing flow id", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "missing flow id")
 		return
 	}
 
 	flow, ok := h.getWeixinFlow(flowID)
 	if !ok {
-		http.Error(w, "flow not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "flow not found")
 		return
 	}
 

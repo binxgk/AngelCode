@@ -1,6 +1,5 @@
-import { IconCode, IconDeviceFloppy, IconTag } from "@tabler/icons-react"
+import { IconDeviceFloppy, IconTag } from "@tabler/icons-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -781,14 +780,6 @@ export function ConfigPage() {
               {versionInfo.version}
             </Badge>
           )
-        }
-        children={
-          <Button variant="outline" asChild>
-            <Link to="/config/raw">
-              <IconCode className="size-4" />
-              {t("pages.config.open_raw")}
-            </Link>
-          </Button>
         }
       />
       <div className="flex-1 overflow-auto p-3 lg:p-6">

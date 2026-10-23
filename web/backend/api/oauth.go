@@ -132,7 +132,7 @@ func (h *Handler) handleListOAuthProviders(w http.ResponseWriter, r *http.Reques
 	for _, provider := range oauthProviderOrder {
 		cred, err := oauthGetCredential(provider)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to load credentials: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to load credentials: %v", err))
 			return
 		}
 
@@ -173,7 +173,7 @@ func (h *Handler) handleListOAuthProviders(w http.ResponseWriter, r *http.Reques
 func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -184,13 +184,13 @@ func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 		Token    string `json:"token"`
 	}
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("invalid JSON: %v", err))
 		return
 	}
 
 	provider, err := normalizeOAuthProvider(req.Provider)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -208,7 +208,7 @@ func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 	case oauthMethodToken:
 		token := strings.TrimSpace(req.Token)
 		if token == "" {
-			http.Error(w, "token is required", http.StatusBadRequest)
+			writeAPIError(w, http.StatusBadRequest, "token is required")
 			return
 		}
 
@@ -218,7 +218,7 @@ func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 			AuthMethod:  oauthMethodToken,
 		}
 		if err := h.persistCredentialAndConfig(provider, oauthMethodToken, cred); err != nil {
-			http.Error(w, fmt.Sprintf("token login failed: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("token login failed: %v", err))
 			return
 		}
 
@@ -234,7 +234,7 @@ func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 		cfg := auth.OpenAIOAuthConfig()
 		info, err := oauthRequestDeviceCode(cfg)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to request device code: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to request device code: %v", err))
 			return
 		}
 
@@ -270,18 +270,18 @@ func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 	case oauthMethodBrowser:
 		cfg, err := oauthConfigForProvider(provider)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			writeAPIError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		pkce, err := oauthGeneratePKCE()
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to generate PKCE: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to generate PKCE: %v", err))
 			return
 		}
 		state, err := oauthGenerateState()
 		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to generate state: %v", err), http.StatusInternalServerError)
+			writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to generate state: %v", err))
 			return
 		}
 
@@ -314,20 +314,20 @@ func (h *Handler) handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	default:
-		http.Error(w, "unsupported login method", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "unsupported login method")
 	}
 }
 
 func (h *Handler) handleGetOAuthFlow(w http.ResponseWriter, r *http.Request) {
 	flowID := strings.TrimSpace(r.PathValue("id"))
 	if flowID == "" {
-		http.Error(w, "missing flow id", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "missing flow id")
 		return
 	}
 
 	flow, ok := h.getOAuthFlow(flowID)
 	if !ok {
-		http.Error(w, "flow not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "flow not found")
 		return
 	}
 
@@ -338,18 +338,18 @@ func (h *Handler) handleGetOAuthFlow(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handlePollOAuthFlow(w http.ResponseWriter, r *http.Request) {
 	flowID := strings.TrimSpace(r.PathValue("id"))
 	if flowID == "" {
-		http.Error(w, "missing flow id", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "missing flow id")
 		return
 	}
 
 	flow, ok := h.getOAuthFlow(flowID)
 	if !ok {
-		http.Error(w, "flow not found", http.StatusNotFound)
+		writeAPIError(w, http.StatusNotFound, "flow not found")
 		return
 	}
 
 	if flow.Method != oauthMethodDeviceCode {
-		http.Error(w, "flow does not support polling", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "flow does not support polling")
 		return
 	}
 	if flow.Status != oauthFlowPending {
@@ -455,7 +455,7 @@ func (h *Handler) handleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleOAuthLogout(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, "failed to read request body")
 		return
 	}
 	defer r.Body.Close()
@@ -464,22 +464,22 @@ func (h *Handler) handleOAuthLogout(w http.ResponseWriter, r *http.Request) {
 		Provider string `json:"provider"`
 	}
 	if err = json.Unmarshal(body, &req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid JSON: %v", err), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, fmt.Sprintf("invalid JSON: %v", err))
 		return
 	}
 
 	provider, err := normalizeOAuthProvider(req.Provider)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		writeAPIError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	if err := oauthDeleteCredential(provider); err != nil {
-		http.Error(w, fmt.Sprintf("failed to delete credential: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to delete credential: %v", err))
 		return
 	}
 	if err := h.syncProviderAuthMethod(provider, ""); err != nil {
-		http.Error(w, fmt.Sprintf("failed to update config: %v", err), http.StatusInternalServerError)
+		writeAPIError(w, http.StatusInternalServerError, fmt.Sprintf("failed to update config: %v", err))
 		return
 	}
 

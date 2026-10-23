@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Angel Code · 界面预览</title>
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("angel-code:theme");
+          if (stored !== "auto" && stored !== "light" && stored !== "dark") {
+            stored = "auto";
+          }
+          var dark =
+            stored === "dark" ||
+            (stored === "auto" &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var theme = dark ? "dark" : "light";
+          document.documentElement.dataset.theme = theme;
+          if (dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/preview/main-preview.ts"></script>
+  </body>
+</html>

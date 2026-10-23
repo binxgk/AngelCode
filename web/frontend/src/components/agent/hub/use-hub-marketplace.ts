@@ -4,7 +4,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { useSetAtom } from "jotai"
 import { type UIEvent, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -18,6 +18,7 @@ import {
   searchSkills,
 } from "@/api/skills"
 import { getTools } from "@/api/tools"
+import { settingsAgentsTabAtom } from "@/store/settings"
 
 import { buildUnavailableToolMessages } from "./tool-support"
 
@@ -25,7 +26,7 @@ const MARKET_SEARCH_LIMIT = 20
 
 export function useHubMarketplace() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
+  const setAgentsTab = useSetAtom(settingsAgentsTabAtom)
   const queryClient = useQueryClient()
   const isLoadMoreLockedRef = useRef(false)
 
@@ -154,7 +155,7 @@ export function useHubMarketplace() {
   }
 
   const handleViewInstalled = () => {
-    void navigate({ to: "/agent/skills" })
+    setAgentsTab("skills")
   }
 
   const handleScroll = (event: UIEvent<HTMLDivElement>) => {

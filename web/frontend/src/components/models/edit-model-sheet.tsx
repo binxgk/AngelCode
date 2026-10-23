@@ -15,7 +15,10 @@ import {
   updateModel,
 } from "@/api/models"
 import { ConfigChangeNotice } from "@/components/config-change-notice"
-import { maskedSecretPlaceholder } from "@/components/secret-placeholder"
+import {
+  isMaskedSecretValue,
+  maskedSecretPlaceholder,
+} from "@/components/secret-placeholder"
 import {
   AdvancedSection,
   Field,
@@ -378,7 +381,10 @@ export function EditModelSheet({
         provider: provider,
         model: modelId,
         api_base: submittedApiBase,
-        api_key: form.apiKey.trim() || undefined,
+        // 掩码值视为"未修改"，否则会把真 key 覆盖成 "****"
+        api_key: isMaskedSecretValue(form.apiKey)
+          ? undefined
+          : form.apiKey.trim() || undefined,
         proxy: form.proxy.trim() || undefined,
         auth_method: authMethodLocked
           ? defaultAuthMethod || undefined

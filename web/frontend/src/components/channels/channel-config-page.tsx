@@ -21,6 +21,7 @@ import {
   isSecretField,
 } from "@/components/channels/channel-config-fields"
 import { getChannelDisplayName } from "@/components/channels/channel-display-name"
+import { isMaskedSecretValue } from "@/components/secret-placeholder"
 import { DiscordForm } from "@/components/channels/channel-forms/discord-form"
 import { FeishuForm } from "@/components/channels/channel-forms/feishu-form"
 import { GenericForm } from "@/components/channels/channel-forms/generic-form"
@@ -145,7 +146,8 @@ function buildSavePayload(
 
   for (const [secretKey, editKey] of Object.entries(SECRET_FIELD_MAP)) {
     const incoming = asString(editConfig[editKey])
-    if (incoming !== "") {
+    // 掩码值视为"未修改"，避免把真密钥覆盖成 "****"
+    if (incoming !== "" && !isMaskedSecretValue(incoming)) {
       settings[secretKey] = incoming
       continue
     }
